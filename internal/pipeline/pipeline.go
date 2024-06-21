@@ -13,7 +13,11 @@ func NewRegisteredPipeline(devices []smi.Device) *Pipeline {
 	p := Pipeline{
 		Collectors: []collector.Collector{
 			collector.NewTemperatureCollector(devices),
-			//TODO: add more collectors
+			collector.NewPowerCollector(devices),
+			collector.NewLivenessCollector(devices),
+			collector.NewErrorCollector(devices),
+			//collector.NewUtilizationCollector(devices),
+			//collector.NewMemoryCollector(devices),
 		},
 	}
 
