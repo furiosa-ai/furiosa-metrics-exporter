@@ -2,6 +2,7 @@ package collector
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 
 	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
@@ -49,7 +50,7 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 
 	return &deviceInfo{
 		arch:   info.Arch().ToString(),
-		device: info.Name(),
+		device: filepath.Base(info.Name()),
 		uuid:   info.UUID(),
 		core:   core,
 	}, nil
