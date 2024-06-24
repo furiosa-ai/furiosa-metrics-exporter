@@ -26,7 +26,7 @@ type errorCollector struct {
 var _ Collector = (*errorCollector)(nil)
 
 func NewErrorCollector(devices []smi.Device) Collector {
-	return &powerCollector{
+	return &errorCollector{
 		devices: devices,
 	}
 }

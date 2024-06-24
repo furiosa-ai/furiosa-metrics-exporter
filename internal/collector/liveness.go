@@ -18,7 +18,7 @@ type livenessCollector struct {
 var _ Collector = (*livenessCollector)(nil)
 
 func NewLivenessCollector(devices []smi.Device) Collector {
-	return &powerCollector{
+	return &livenessCollector{
 		devices: devices,
 	}
 }
