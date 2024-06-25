@@ -3,10 +3,11 @@ module github.com/furiosa-ai/furiosa-metric-exporter
 go 1.21.3
 
 require (
-	github.com/furiosa-ai/libfuriosa-kubernetes v0.1.16
+	github.com/furiosa-ai/libfuriosa-kubernetes v0.1.18
 	github.com/prometheus/client_golang v1.19.1
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
+	golang.org/x/sync v0.7.0
 )
 
 require (
@@ -21,7 +22,6 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )

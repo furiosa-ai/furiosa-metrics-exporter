@@ -8,8 +8,8 @@ github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSV
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/furiosa-ai/libfuriosa-kubernetes v0.1.16 h1:wiZrT5ews31Rld1GbILSeByUp1NqNUY7a6FCF5UcFUg=
-github.com/furiosa-ai/libfuriosa-kubernetes v0.1.16/go.mod h1:6mB4wZjFVBMif4nK2xuyGm0xxmjb+jeTiFs0/H+Dxfg=
+github.com/furiosa-ai/libfuriosa-kubernetes v0.1.18 h1:rKTDREEOcbxNrYA9Y78ijWDePrL7AVdxLOBbQjplZkw=
+github.com/furiosa-ai/libfuriosa-kubernetes v0.1.18/go.mod h1:yjNaVLJwvfF1FayGHV3mhnWKh1DIuvVEEgqfWjHeYQA=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
