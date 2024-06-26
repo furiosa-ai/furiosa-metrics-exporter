@@ -58,7 +58,7 @@ func (t *powerCollector) Collect() error {
 			return err
 		}
 
-		metric[rms] = float64(power)
+		metric[rms] = power
 		metricContainer = append(metricContainer, metric)
 	}
 

@@ -59,8 +59,8 @@ func (t *temperatureCollector) Collect() error {
 			return err
 		}
 
-		metric[ambient] = float64(deviceTemperature.Ambient())
-		metric[peak] = float64(deviceTemperature.SocPeak())
+		metric[ambient] = deviceTemperature.Ambient()
+		metric[peak] = deviceTemperature.SocPeak()
 		metricContainer = append(metricContainer, metric)
 	}
 
