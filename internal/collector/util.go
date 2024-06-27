@@ -2,6 +2,7 @@ package collector
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 
@@ -13,6 +14,7 @@ type deviceInfo struct {
 	device string
 	uuid   string
 	core   string
+	node   string
 }
 
 func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
@@ -48,10 +50,13 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 		core = fmt.Sprintf("%d-%d", start, end)
 	}
 
+	nodeName := os.Getenv("NODE_NAME")
+
 	return &deviceInfo{
 		arch:   info.Arch().ToString(),
 		device: filepath.Base(info.Name()),
 		uuid:   info.UUID(),
 		core:   core,
+		node:   nodeName,
 	}, nil
 }

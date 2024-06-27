@@ -33,6 +33,7 @@ func (t *powerCollector) Register() {
 			device,
 			label,
 			core,
+			kubernetesNodeName,
 			uuid,
 		})
 }
@@ -52,6 +53,7 @@ func (t *powerCollector) Collect() error {
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[core] = info.core
+		metric[kubernetesNodeName] = info.node
 
 		power, err := d.PowerConsumption()
 		if err != nil {
@@ -70,11 +72,12 @@ func (t *powerCollector) postProcess(metrics MetricContainer) error {
 		if value, ok := metric["rms"]; ok {
 
 			t.gaugeVec.With(prometheus.Labels{
-				arch:   metric[arch].(string),
-				device: metric[device].(string),
-				label:  rms,
-				uuid:   metric[uuid].(string),
-				core:   metric[core].(string),
+				arch:               metric[arch].(string),
+				core:               metric[core].(string),
+				device:             metric[device].(string),
+				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				label:              rms,
+				uuid:               metric[uuid].(string),
 			}).Set(value.(float64))
 		}
 	}

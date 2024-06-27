@@ -32,6 +32,7 @@ func (t *livenessCollector) Register() {
 			arch,
 			core,
 			device,
+			kubernetesNodeName,
 			uuid,
 		})
 }
@@ -51,6 +52,7 @@ func (t *livenessCollector) Collect() error {
 		metric[core] = info.core
 		metric[device] = info.device
 		metric[uuid] = info.uuid
+		metric[kubernetesNodeName] = info.node
 
 		value, err := d.Liveness()
 		if err != nil {
@@ -75,10 +77,11 @@ func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 			}
 
 			t.gaugeVec.With(prometheus.Labels{
-				arch:   metric[arch].(string),
-				core:   metric[core].(string),
-				device: metric[device].(string),
-				uuid:   metric[uuid].(string),
+				arch:               metric[arch].(string),
+				core:               metric[core].(string),
+				device:             metric[device].(string),
+				uuid:               metric[uuid].(string),
+				kubernetesNodeName: metric[kubernetesNodeName].(string),
 			}).Set(alive)
 		}
 	}

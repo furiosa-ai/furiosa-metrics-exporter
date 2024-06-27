@@ -23,30 +23,32 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 			description: "liveness is true",
 			source: MetricContainer{
 				{
-					arch:     "rngd",
-					core:     "0-7",
-					device:   "npu0",
-					uuid:     "uuid",
-					liveness: true,
+					arch:               "rngd",
+					core:               "0-7",
+					device:             "npu0",
+					uuid:               "uuid",
+					kubernetesNodeName: "node",
+					liveness:           true,
 				},
 			},
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",uuid="uuid"} 1
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1
 `,
 		},
 		{
 			description: "liveness is false",
 			source: MetricContainer{
 				{
-					arch:     "rngd",
-					core:     "0-7",
-					device:   "npu0",
-					uuid:     "uuid",
-					liveness: false,
+					arch:               "rngd",
+					core:               "0-7",
+					device:             "npu0",
+					uuid:               "uuid",
+					kubernetesNodeName: "node",
+					liveness:           false,
 				},
 			},
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",uuid="uuid"} 0
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 0
 `,
 		},
 	}

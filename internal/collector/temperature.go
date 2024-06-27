@@ -31,9 +31,10 @@ func (t *temperatureCollector) Register() {
 	},
 		[]string{
 			arch,
-			device,
-			label,
 			core,
+			device,
+			kubernetesNodeName,
+			label,
 			uuid,
 		})
 }
@@ -53,6 +54,7 @@ func (t *temperatureCollector) Collect() error {
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[core] = info.core
+		metric[kubernetesNodeName] = info.node
 
 		deviceTemperature, err := d.DeviceTemperature()
 		if err != nil {
@@ -72,21 +74,23 @@ func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
 		if value, ok := metric[ambient]; ok {
 
 			t.gaugeVec.With(prometheus.Labels{
-				arch:   metric[arch].(string),
-				device: metric[device].(string),
-				label:  ambient,
-				uuid:   metric[uuid].(string),
-				core:   metric[core].(string),
+				arch:               metric[arch].(string),
+				core:               metric[core].(string),
+				device:             metric[device].(string),
+				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				label:              ambient,
+				uuid:               metric[uuid].(string),
 			}).Set(value.(float64))
 		}
 
 		if value, ok := metric[peak]; ok {
 			t.gaugeVec.With(prometheus.Labels{
-				arch:   metric[arch].(string),
-				device: metric[device].(string),
-				label:  peak,
-				uuid:   metric[uuid].(string),
-				core:   metric[core].(string),
+				arch:               metric[arch].(string),
+				core:               metric[core].(string),
+				device:             metric[device].(string),
+				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				label:              peak,
+				uuid:               metric[uuid].(string),
 			}).Set(value.(float64))
 		}
 	}
