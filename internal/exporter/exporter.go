@@ -38,7 +38,7 @@ func NewGenericExporter(conf *config.Config, devices []smi.Device, errChan chan 
 func (e *Exporter) Start(ctx context.Context) {
 	//run pipeline
 	go func() {
-		tick := time.NewTicker(time.Microsecond * time.Duration(e.conf.Interval))
+		tick := time.NewTicker(time.Second * time.Duration(e.conf.Interval))
 
 		for {
 			select {
