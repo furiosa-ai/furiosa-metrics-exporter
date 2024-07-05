@@ -29,7 +29,7 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 	}
 
 	expected := `
-# HELP furiosa_npu_hw_power The current power of NPU components
+# HELP furiosa_npu_hw_power The current power of NPU device
 # TYPE furiosa_npu_hw_power gauge
 furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="rms",uuid="uuid"} 4795000
 `

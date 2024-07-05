@@ -30,7 +30,7 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 	}
 
 	expected := `
-# HELP furiosa_npu_hw_temperature The current temperatureCollector of NPU components
+# HELP furiosa_npu_hw_temperature The current temperature of NPU device
 # TYPE furiosa_npu_hw_temperature gauge
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="peak",uuid="uuid"} 39
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="ambient",uuid="uuid"} 35

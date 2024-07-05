@@ -26,7 +26,7 @@ func NewPowerCollector(devices []smi.Device) Collector {
 func (t *powerCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_power",
-		Help: "The current power of NPU components",
+		Help: "The current power of NPU device",
 	},
 		[]string{
 			arch,

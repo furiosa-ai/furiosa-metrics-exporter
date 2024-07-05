@@ -27,7 +27,7 @@ func NewTemperatureCollector(devices []smi.Device) Collector {
 func (t *temperatureCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
-		Help: "The current temperatureCollector of NPU components",
+		Help: "The current temperature of NPU device",
 	},
 		[]string{
 			arch,
