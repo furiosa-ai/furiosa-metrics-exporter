@@ -46,12 +46,6 @@ func start() error {
 	//get config
 	config := config.NewDefaultConfig()
 
-	err := smi.Init()
-	if err != nil {
-		logger.Err(err).Msg("couldn't initialize smi library")
-		return err
-	}
-
 	devices, err := smi.ListDevices()
 	if err != nil {
 		return err
@@ -86,11 +80,6 @@ Loop:
 
 	logger.Info().Msg("stopping metric server")
 	err = exporter.Stop()
-	if err != nil {
-		return err
-	}
-
-	err = smi.Shutdown()
 	if err != nil {
 		return err
 	}
