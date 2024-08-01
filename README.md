@@ -1,1 +1,2 @@
-# furiosa-metric-exporter
+# furiosa-metrics-exporter
+

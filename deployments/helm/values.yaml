@@ -12,7 +12,7 @@ daemonSet:
     - key: npu
       operator: Exists
   image:
-    repository: ghcr.io/furiosa-ai/furiosa-metric-exporter
+    repository: ghcr.io/furiosa-ai/furiosa-metrics-exporter
     tag: latest
     pullPolicy: IfNotPresent
   resources:

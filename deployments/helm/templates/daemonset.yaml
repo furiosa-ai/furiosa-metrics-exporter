@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "furiosa-metric-exporter.name" . }}
+  name: {{ include "furiosa-metrics-exporter.name" . }}
   namespace: {{ .Values.namespace | default "kube-system" }}
   labels:
-    {{- include "furiosa-metric-exporter.labels" . | nindent 4 }}
+    {{- include "furiosa-metrics-exporter.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "furiosa-metric-exporter.name" . }}
+      app.kubernetes.io/name: {{ include "furiosa-metrics-exporter.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   updateStrategy:
     {{- toYaml .Values.daemonSet.updateStrategy | nindent 4 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "furiosa-metric-exporter.name" . }}
+        app.kubernetes.io/name: {{ include "furiosa-metrics-exporter.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       priorityClassName:  {{ .Values.daemonSet.priorityClassName | default "system-node-critical" }}
       containers:
-        - name: {{ include "furiosa-metric-exporter.name" . }}
-          image: {{ .Values.daemonSet.image.repository | default "ghcr.io/furiosa-ai/furiosa-metric-exporter" }}:{{ .Values.daemonSet.image.tag | default "latest" }}
+        - name: {{ include "furiosa-metrics-exporter.name" . }}
+          image: {{ .Values.daemonSet.image.repository | default "ghcr.io/furiosa-ai/furiosa-metrics-exporter" }}:{{ .Values.daemonSet.image.tag | default "latest" }}
           command: ["./main"]
           env:
             - name: NODE_NAME
