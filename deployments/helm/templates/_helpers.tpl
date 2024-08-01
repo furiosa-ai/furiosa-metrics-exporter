@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "furiosa-metric-exporter.name" -}}
+{{- define "furiosa-metrics-exporter.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "furiosa-metric-exporter.fullname" -}}
+{{- define "furiosa-metrics-exporter.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "furiosa-metric-exporter.chart" -}}
+{{- define "furiosa-metrics-exporter.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "furiosa-metric-exporter.labels" -}}
-helm.sh/chart: {{ include "furiosa-metric-exporter.chart" . }}
-{{ include "furiosa-metric-exporter.selectorLabels" . }}
+{{- define "furiosa-metrics-exporter.labels" -}}
+helm.sh/chart: {{ include "furiosa-metrics-exporter.chart" . }}
+{{ include "furiosa-metrics-exporter.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "furiosa-metric-exporter.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "furiosa-metric-exporter.name" . }}
+{{- define "furiosa-metrics-exporter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "furiosa-metrics-exporter.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "furiosa-metric-exporter.serviceAccountName" -}}
+{{- define "furiosa-metrics-exporter.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "furiosa-metric-exporter.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "furiosa-metrics-exporter.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

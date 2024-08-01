@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/furiosa-ai/furiosa-metric-exporter/internal/config"
-	"github.com/furiosa-ai/furiosa-metric-exporter/internal/exporter"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/exporter"
 	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -15,7 +15,7 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "furiosa-metric-exporter",
+		Use:   "furiosa-metrics-exporter",
 		Short: "Furiosa Metric Exporter",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return start()

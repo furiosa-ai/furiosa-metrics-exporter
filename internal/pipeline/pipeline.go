@@ -3,7 +3,7 @@ package pipeline
 import (
 	"context"
 
-	"github.com/furiosa-ai/furiosa-metric-exporter/internal/collector"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
 	"golang.org/x/sync/errgroup"
 )

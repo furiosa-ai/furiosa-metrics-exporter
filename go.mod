@@ -1,4 +1,4 @@
-module github.com/furiosa-ai/furiosa-metric-exporter
+module github.com/furiosa-ai/furiosa-metrics-exporter
 
 go 1.21.3
 

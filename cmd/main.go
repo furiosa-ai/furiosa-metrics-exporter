@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/furiosa-ai/furiosa-metric-exporter/internal/cmd"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/cmd"
 )
 
 func main() {
