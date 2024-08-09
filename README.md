@@ -76,4 +76,5 @@ furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="
 ### Kubernetes
 The helm chart is available at [deployments/helm](deployments/helm) directory. To configure deployment as you need, you can modify [deployments/helm/values.yaml](deployments/helm/values.yaml).
 <!-- add prometheus annotation info here -->
-<!-- add grafana dashboard import here -->
+
+The example grafana dashboard is available at [deployments/grafana/npu-dashboard.json](deployments/grafana/npu-dashboard.json) directory.
