@@ -1,7 +1,7 @@
 # Furiosa Metrics Exporter 
 
 ## Overview
-This repository contains Furiosa Metric Exporter implementation, and it exposes collection of metrics related to FuriosaAI NPU devices in [Prometheus](https://prometheus.io/) format.
+The Furiosa Metrics Exporter exposes collection of metrics related to FuriosaAI NPU devices in [Prometheus](https://prometheus.io/) format.
 
 ## Metrics
 The exporter is composed of chain of collectors, each collector is responsible for collecting specific metrics from the Furiosa NPU devices.
