@@ -7,19 +7,19 @@ This repository contains Furiosa Metric Exporter implementation, and it exposes 
 The exporter is composed of chain of collectors, each collector is responsible for collecting specific metrics from the Furiosa NPU devices.
 The following table shows the available collectors and metrics:
 
-| Collector Name | Metric                     | Type  | Metric Labels                                               | Description                                      |
-|----------------|----------------------------|-------|-------------------------------------------------------------|--------------------------------------------------|
-| Liveness       | furiosa_npu_alive          | gauge | arch, core, device, uuid, kubernetes_node_name, uuid        | The liveness of the Furiosa NPU device.          |
-| Error          | furiosa_npu_error          | gauge | arch, core, device, uuid, kubernetes_node_name, label       | The error count of the Furiosa NPU device.       |
-| Temperature    | furiosa_npu_hw_temperature | gauge | arch, core, device, uuid, kubernetes_node_name, label       | The temperature of the Furiosa NPU device.       |
-| Power          | furiosa_npu_hw_power       | gauge | arch, core, device, uuid, kubernetes_node_name, label, uuid | The power consumption of the Furiosa NPU device. |
+| Collector Name | Metric                     | Type  | Metric Labels                                         | Description                                      |
+|----------------|----------------------------|-------|-------------------------------------------------------|--------------------------------------------------|
+| Liveness       | furiosa_npu_alive          | gauge | arch, core, device, uuid, kubernetes_node_name        | The liveness of the Furiosa NPU device.          |
+| Error          | furiosa_npu_error          | gauge | arch, core, device, uuid, kubernetes_node_name, label | The error count of the Furiosa NPU device.       |
+| Temperature    | furiosa_npu_hw_temperature | gauge | arch, core, device, uuid, kubernetes_node_name, label | The temperature of the Furiosa NPU device.       |
+| Power          | furiosa_npu_hw_power       | gauge | arch, core, device, uuid, kubernetes_node_name, label | The power consumption of the Furiosa NPU device. |
 
 All metrics share common metric labels such as arch, core, device, kubernetes_node_name, and uuid.
 The following table describes the common metric labels:
 
 | Common Metric Label  | Description                                                                                                                                                          |
 |----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| arch                 | The architecture of the Furiosa NPU device. e.g. warboy, renegade                                                                                                    |
+| arch                 | The architecture of the Furiosa NPU device. e.g. warboy, rngd                                                                                                        |
 | core                 | The core number of the Furiosa NPU device. e.g. 0, 1, 2, 3, 4, 5, 6, 7, 0-1, 2-3, 0-3, 4-5, 6-7, 4-7, 0-7                                                            |
 | device               | The device name of the Furiosa NPU device. e.g. npu0                                                                                                                 |
 | kubernetes_node_name | The name of the Kubernetes node where the exporter is running, this attribute can be missing if the exporter is running on the host machine or in a naked container. |
@@ -74,6 +74,6 @@ furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="
 <!-- add baremetal support here -->
 
 ### Kubernetes
-The helm chart is available at [deployment/helm](deployments/helm) directory. To configure deployment as you need, you can modify [deployments/helm/values.yaml](deployments/helm/values.yaml).
+The helm chart is available at [deployments/helm](deployments/helm) directory. To configure deployment as you need, you can modify [deployments/helm/values.yaml](deployments/helm/values.yaml).
 <!-- add prometheus annotation info here -->
 <!-- add grafana dashboard import here -->
