@@ -38,11 +38,11 @@ vendor:
 
 .PHONY: image
 image:
-	docker build . -t ghcr.io/furiosa-ai/furiosa-metrics-exporter:devel --progress=plain --platform=linux/amd64
+	docker build . -t registry.corp.furiosa.ai/furiosa/furiosa-metrics-exporter:devel --progress=plain --platform=linux/amd64
 
 .PHONY: image-no-cache
 image-no-cache:
-	docker build . --no-cache -t ghcr.io/furiosa-ai/furiosa-metrics-exporter:devel --progress=plain --platform=linux/amd64
+	docker build . --no-cache -t registry.corp.furiosa.ai/furiosa/furiosa-metrics-exporter:devel --progress=plain --platform=linux/amd64
 
 .PHONY: helm-lint
 helm-lint:

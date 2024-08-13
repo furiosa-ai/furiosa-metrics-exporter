@@ -1,7 +1,7 @@
 # Furiosa Metrics Exporter 
 
 ## Overview
-This repository contains Furiosa Metric Exporter implementation, and it exposes collection of metrics related to FuriosaAI NPU devices in [Prometheus](https://prometheus.io/) format.
+The Furiosa Metrics Exporter exposes collection of metrics related to FuriosaAI NPU devices in [Prometheus](https://prometheus.io/) format.
 
 ## Metrics
 The exporter is composed of chain of collectors, each collector is responsible for collecting specific metrics from the Furiosa NPU devices.
@@ -76,4 +76,5 @@ furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="
 ### Kubernetes
 The helm chart is available at [deployments/helm](deployments/helm) directory. To configure deployment as you need, you can modify [deployments/helm/values.yaml](deployments/helm/values.yaml).
 <!-- add prometheus annotation info here -->
-<!-- add grafana dashboard import here -->
+
+The example grafana dashboard is available at [deployments/grafana/npu-dashboard.json](deployments/grafana/npu-dashboard.json) directory.

@@ -7,12 +7,22 @@ daemonSet:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
-  tolerations:
-    # this should be changed to "furiosa.ai/npu" later
-    - key: npu
-      operator: Exists
+  # add toleration as needed
+  # tolerations:
+  #   - key: furiosa.ai/npu
+  #     operator: Exists
+  # add affinity as needed
+  # affinity:
+  #  nodeAffinity:
+  #    requiredDuringSchedulingIgnoredDuringExecution:
+  #      nodeSelectorTerms:
+  #        - matchExpressions:
+  #            - key: feature.node.kubernetes.io/pci-1ed2.present
+  #              operator: In
+  #              values:
+  #                - "true"
   image:
-    repository: ghcr.io/furiosa-ai/furiosa-metrics-exporter
+    repository: registry.corp.furiosa.ai/furiosa/furiosa-metrics-exporter
     tag: latest
     pullPolicy: IfNotPresent
   resources:
