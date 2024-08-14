@@ -3,6 +3,11 @@ kind: Service
 metadata:
   name: {{ include "furiosa-metrics-exporter.name" . }}
   namespace: {{ .Values.namespace | default "kube-system" }}
+  {{- if .Values.service.enableScrapAnnotations }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ .Values.service.port }}"
+  {{- end }}
   labels:
     app.kubernetes.io/name: {{ include "furiosa-metrics-exporter.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
