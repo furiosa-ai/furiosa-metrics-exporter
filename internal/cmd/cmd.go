@@ -3,14 +3,15 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/exporter"
-	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/exporter"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
 )
 
 func NewCommand() *cobra.Command {

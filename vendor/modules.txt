@@ -10,10 +10,10 @@ github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/furiosa-ai/libfuriosa-kubernetes v0.1.20
+# github.com/furiosa-ai/furiosa-smi-go v0.0.0-20240816080258-7e52d8227611
 ## explicit; go 1.21.3
-github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi
-github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi/binding
+github.com/furiosa-ai/furiosa-smi-go/pkg/smi
+github.com/furiosa-ai/furiosa-smi-go/pkg/smi/binding
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
