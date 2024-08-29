@@ -46,7 +46,36 @@ func TestMain(m *testing.M) {
 		kubeConfigPath = homePath + "/" + defaultKubeConfigPath
 	}
 
+	var helmReleaseName string
+	{
+		UUID, _ := uuid.NewUUID()
+		helmReleaseName = fmt.Sprintf("e2e-test-%s", UUID.String()[0:8])
+	}
+
+	var absolutePath string
+	{
+		relativePath := "../deployments/helm"
+		absPath, err := filepath.Abs(relativePath)
+		if err != nil {
+			panic(err)
+		}
+
+		absolutePath = absPath
+	}
+
+	var valuesYaml string
+	{
+		filePath := absolutePath + "/values.yaml"
+		file, err := os.ReadFile(filePath)
+		if err != nil {
+			panic(err)
+		}
+
+		valuesYaml = string(file)
+	}
+
 	testenv = env.New()
+
 	testenv.Setup(
 		// Setup K8s Client
 		func(ctx context.Context, config *envconf.Config) (context.Context, error) {
@@ -76,45 +105,8 @@ func TestMain(m *testing.M) {
 
 			return ctx, nil
 		},
-	)
-
-	exitCode := testenv.Run(m)
-	os.Exit(exitCode)
-}
-
-func TestSample(t *testing.T) {
-	helmReleaseName := func() string {
-		UUID, _ := uuid.NewUUID()
-		return fmt.Sprintf("e2e-test-%s", UUID.String()[0:8])
-	}()
-
-	absolutePath := func() string {
-		relativePath := "../deployments/helm"
-		absPath, err := filepath.Abs(relativePath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		return absPath
-	}()
-
-	valuesYaml := func() string {
-		filePath := absolutePath + "/values.yaml"
-		file, err := os.ReadFile(filePath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		return string(file)
-	}()
-
-	f := features.New("TEST").
-		Setup(func(ctx context.Context, subT *testing.T, _ *envconf.Config) context.Context {
-			helmClient, err := getHelmClientFromContext(ctx)
-			if err != nil {
-				subT.Error(err)
-			}
-
+		func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
+			helmClient, _ := ctx.Value(helmClientCtxKey).(helmclient.Client)
 			helmChartSpec := &helmclient.ChartSpec{
 				ReleaseName:     helmReleaseName,
 				ChartName:       absolutePath,
@@ -127,11 +119,30 @@ func TestSample(t *testing.T) {
 			}
 
 			if _, err := helmClient.InstallChart(ctx, helmChartSpec, nil); err != nil {
-				subT.Error(err)
+				return ctx, err
 			}
 
-			return ctx
-		}).
+			return ctx, nil
+		},
+	)
+
+	testenv.Finish(
+		func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
+			helmClient, _ := ctx.Value(helmClientCtxKey).(helmclient.Client)
+			if err := helmClient.UninstallReleaseByName(helmReleaseName); err != nil {
+				return ctx, err
+			}
+
+			return ctx, nil
+		},
+	)
+
+	exitCode := testenv.Run(m)
+	os.Exit(exitCode)
+}
+
+func TestSample(t *testing.T) {
+	f := features.New("TEST").
 		Assess("Check `Service` is created", func(ctx context.Context, subT *testing.T, config *envconf.Config) context.Context {
 			service := corev1.Service{}
 			if err := config.Client().Resources().Get(ctx, defaultHelmChartName, defaultNamespace, &service); err != nil {
@@ -156,28 +167,7 @@ func TestSample(t *testing.T) {
 
 			return ctx
 		}).
-		Teardown(func(ctx context.Context, subT *testing.T, _ *envconf.Config) context.Context {
-			helmClient, err := getHelmClientFromContext(ctx)
-			if err != nil {
-				subT.Error(err)
-			}
-
-			if err := helmClient.UninstallReleaseByName(helmReleaseName); err != nil {
-				subT.Error(err)
-			}
-
-			return ctx
-		}).
 		Feature()
 
 	testenv.Test(t, f)
-}
-
-func getHelmClientFromContext(ctx context.Context) (helmclient.Client, error) {
-	helmClient, ok := ctx.Value(helmClientCtxKey).(helmclient.Client)
-	if !ok {
-		return nil, fmt.Errorf("unable to get Helm client from context using key %s", helmClientCtxKey)
-	}
-
-	return helmClient, nil
 }
