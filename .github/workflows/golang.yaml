@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.22.6' ]
+        go-version: [ '1.21.3' ]
 
     steps:
       - name: checkout furiosa-smi
