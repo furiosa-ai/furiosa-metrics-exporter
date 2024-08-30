@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
-	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"golang.org/x/sync/errgroup"
 )
 
