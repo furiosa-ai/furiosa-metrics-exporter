@@ -2,12 +2,13 @@ package exporter
 
 import (
 	"context"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
-	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"time"
+
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Exporter struct {

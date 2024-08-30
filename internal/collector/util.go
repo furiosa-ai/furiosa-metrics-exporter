@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 )
 
 type deviceInfo struct {
