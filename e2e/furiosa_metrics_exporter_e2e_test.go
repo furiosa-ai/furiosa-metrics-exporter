@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/furiosa-ai/furiosa-metrics-exporter/e2e"
+	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/e2e"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"
@@ -61,16 +61,9 @@ var (
 	valuesObject map[string]any
 )
 
-var frk *e2e.Context = nil
-
 func init() {
 	var err error
 	var helmChartValuesYAMLBytes []byte
-
-	frk, err = e2e.NewFrameworkWithDefaultNamespace()
-	if err != nil {
-		panic(err)
-	}
 
 	filePath := chartPath + "/values.yaml"
 	helmChartValuesYAMLBytes, err = os.ReadFile(filePath)
@@ -86,11 +79,11 @@ func init() {
 	}
 }
 
-var _ = BeforeSuite(func() { frk.GenericBeforeSuiteFunc() })
+var _ = BeforeSuite(func() { e2e.GenericBeforeSuiteFunc() })
 
 var _ = Describe(testSuitSpecName, func() {
 	Context("Check required metrics exist", Ordered, func() {
-		BeforeAll(frk.DeployHelmChart(defaultHelmChartName, chartPath, valuesYaml))
+		BeforeAll(e2e.DeployHelmChart(defaultHelmChartName, chartPath, valuesYaml))
 
 		It("Check `Service` is created", checkK8sServiceIsCreated())
 
@@ -98,7 +91,7 @@ var _ = Describe(testSuitSpecName, func() {
 
 		It("Get metrics from each pods and validate it", getMetricFromEachPodsAndValidateIt())
 
-		AfterAll(frk.DeleteHelmChart())
+		AfterAll(e2e.DeleteHelmChart())
 	})
 })
 
@@ -107,10 +100,10 @@ func TestFuriosaMetricsExporterE2E(t *testing.T) {
 }
 
 func checkK8sServiceIsCreated() func() {
-	clientSet := frk.ClientSet
+	clientSet := e2e.BackgroundContext().ClientSet
 
 	return func() {
-		svc, err := clientSet.CoreV1().Services(frk.Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
+		svc, err := clientSet.CoreV1().Services(e2e.BackgroundContext().Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
 		Expect(err).To(BeNil())
 
 		expectedPort := valuesObject["service"].(map[string]any)["port"].(int)
@@ -121,11 +114,11 @@ func checkK8sServiceIsCreated() func() {
 }
 
 func waitUntilDaemonSetIsReady() func() {
-	clientSet := frk.ClientSet
+	clientSet := e2e.BackgroundContext().ClientSet
 
 	return func() {
 		Eventually(func() bool {
-			ds, err := clientSet.AppsV1().DaemonSets(frk.Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
+			ds, err := clientSet.AppsV1().DaemonSets(e2e.BackgroundContext().Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
 			if err != nil {
 				return false
 			}
@@ -140,14 +133,14 @@ func waitUntilDaemonSetIsReady() func() {
 }
 
 func getMetricFromEachPodsAndValidateIt() func() {
-	clientSet := frk.ClientSet
+	clientSet := e2e.BackgroundContext().ClientSet
 
 	return func() {
-		helmReleaseName := frk.HelmChart.ReleaseName
+		helmReleaseName := e2e.BackgroundContext().HelmChart.ReleaseName
 		labelSelector := fmt.Sprintf("app.kubernetes.io/name=%s,app.kubernetes.io/instance=%s", defaultHelmChartName, helmReleaseName)
 		listOptions := metav1.ListOptions{LabelSelector: labelSelector}
 
-		podList, err := clientSet.CoreV1().Pods(frk.Namespace).List(context.TODO(), listOptions)
+		podList, err := clientSet.CoreV1().Pods(e2e.BackgroundContext().Namespace).List(context.TODO(), listOptions)
 		Expect(err).To(BeNil())
 
 		nodeNameToLineByLineMetricsMap := make(map[string][]string)
