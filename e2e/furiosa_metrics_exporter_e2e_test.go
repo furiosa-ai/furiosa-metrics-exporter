@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -62,11 +63,8 @@ var (
 )
 
 func init() {
-	var err error
-	var helmChartValuesYAMLBytes []byte
-
 	filePath := chartPath + "/values.yaml"
-	helmChartValuesYAMLBytes, err = os.ReadFile(filePath)
+	helmChartValuesYAMLBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		panic(err)
 	}
@@ -77,6 +75,17 @@ func init() {
 	if err = yaml.Unmarshal(helmChartValuesYAMLBytes, &valuesObject); err != nil {
 		panic(err)
 	}
+}
+
+func TestMain(m *testing.M) {
+	shouldSkipE2EFrameworkInit, err := strconv.Atoi(os.Getenv("SKIP_E2E_FRAMEWORK_INIT"))
+	if err == nil && shouldSkipE2EFrameworkInit == 1 {
+		fmt.Println("Skipping E2E tests.")
+		os.Exit(0)
+	}
+
+	exitCode := m.Run()
+	os.Exit(exitCode)
 }
 
 var _ = BeforeSuite(func() { e2e.GenericBeforeSuiteFunc() })
