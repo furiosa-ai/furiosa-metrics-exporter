@@ -103,13 +103,14 @@ func checkK8sServiceIsCreated() func() {
 	clientSet := e2e.BackgroundContext().ClientSet
 
 	return func() {
-		svc, err := clientSet.CoreV1().Services(e2e.BackgroundContext().Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
-		Expect(err).To(BeNil())
-
 		expectedPort := valuesObject["service"].(map[string]any)["port"].(int)
-		actualPort := int(svc.Spec.Ports[0].Port)
+		Eventually(func() int {
+			svc, err := clientSet.CoreV1().Services(e2e.BackgroundContext().Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
+			Expect(err).To(BeNil())
 
-		Expect(actualPort).To(Equal(expectedPort))
+			actualPort := int(svc.Spec.Ports[0].Port)
+			return actualPort
+		}).WithPolling(time.Second * 1).WithTimeout(time.Second * 10).Should(Equal(expectedPort))
 	}
 }
 
