@@ -12,6 +12,9 @@ else
     $(error Unsupported OS)
 endif
 
+# regexp to filter some directories from testing
+EXCLUDE_DIR_REGEXP := E2E
+
 .PHONY: build
 build:
 	CGO_CFLAGS=$(CGO_CFLAGS) CGO_LDFLAGS=$(CGO_LDFLAGS) go build cmd/main.go
@@ -26,7 +29,7 @@ lint:
 
 .PHONY: test
 test:
-	$(LIBRARY_PATH_VAR)=/usr/local/lib CGO_CFLAGS=$(CGO_CFLAGS) CGO_LDFLAGS=$(CGO_LDFLAGS) go test ./...
+	SKIP_E2E_FRAMEWORK_INIT=1 $(LIBRARY_PATH_VAR)=/usr/local/lib CGO_CFLAGS=$(CGO_CFLAGS) CGO_LDFLAGS=$(CGO_LDFLAGS) go test -skip $(EXCLUDE_DIR_REGEXP) ./...
 
 .PHONY: tidy
 tidy:
