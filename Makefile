@@ -50,3 +50,7 @@ image-no-cache:
 .PHONY: helm-lint
 helm-lint:
 	helm lint ./deployments/helm
+
+.PHONY:e2e
+e2e:
+	CGO_CFLAGS=$(CGO_CFLAGS) CGO_LDFLAGS=$(CGO_LDFLAGS) ginkgo ./e2e
