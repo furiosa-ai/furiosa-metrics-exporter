@@ -80,7 +80,7 @@ func init() {
 
 	// below block will parse env values and injects them into the `image` section in `values.yaml`
 	{
-		image := valuesObject["image"].(map[string]string)
+		image := valuesObject["daemonSet"].(map[string]any)["image"].(map[string]any)
 
 		e2eTestImageRegistry := os.Getenv("E2E_TEST_IMAGE_REGISTRY")
 		e2eTestImageName := os.Getenv("E2E_TEST_IMAGE_NAME")
@@ -96,7 +96,7 @@ func init() {
 			image["tag"] = e2eTestImageTag
 		}
 
-		valuesObject["image"] = image
+		valuesObject["daemonSet"].(map[string]any)["image"] = image
 	}
 }
 
