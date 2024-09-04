@@ -12,7 +12,6 @@ import (
 	"github.com/furiosa-ai/libfuriosa-kubernetes/pkg/e2e"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -21,6 +20,9 @@ const (
 	defaultHelmChartName = "furiosa-metrics-exporter"
 
 	chartPath = "../deployments/helm"
+
+	e2eTestPort       = 6254
+	e2eTestTargetPort = 6254
 )
 
 var (
@@ -57,33 +59,52 @@ var (
 )
 
 var (
-	valuesYaml   string
-	valuesObject map[string]any
+// valuesObject map[string]any
 )
 
-func init() {
-	var err error
-	var helmChartValuesYAMLBytes []byte
-
-	filePath := chartPath + "/values.yaml"
-	helmChartValuesYAMLBytes, err = os.ReadFile(filePath)
-	if err != nil {
-		panic(err)
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
 	}
+	return value
+}
 
-	valuesYaml = string(helmChartValuesYAMLBytes)
+func composeValues() string {
+	imageRegistry := getEnv("E2E_TEST_IMAGE_REGISTRY", "registry.corp.furiosa.ai/furiosa")
+	imageName := getEnv("E2E_TEST_IMAGE_NAME", "furiosa-feature-discovery")
+	imageTag := getEnv("E2E_TEST_IMAGE_TAG", "latest")
 
-	valuesObject = make(map[string]any)
-	if err = yaml.Unmarshal(helmChartValuesYAMLBytes, &valuesObject); err != nil {
-		panic(err)
-	}
+	template := fmt.Sprintf(`namespace: kube-system
+daemonSet:
+  priorityClassName: system-node-critical
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  image:
+    repository: %s/%s
+    tag: %s
+    pullPolicy: IfNotPresent
+  resources:
+    cpu: 100m
+    memory: 64Mi
+
+service:
+  type: ClusterIP
+  port: %d
+  targetPort: %d
+  enableScrapAnnotations: true
+`, imageRegistry, imageName, imageTag, e2eTestPort, e2eTestTargetPort)
+	return template
 }
 
 var _ = BeforeSuite(func() { e2e.GenericBeforeSuiteFunc() })
 
 var _ = Describe(testSuitSpecName, func() {
 	Context("Check required metrics exist", Ordered, func() {
-		BeforeAll(e2e.DeployHelmChart(defaultHelmChartName, chartPath, valuesYaml))
+		BeforeAll(e2e.DeployHelmChart(defaultHelmChartName, chartPath, composeValues()))
 
 		It("Check `Service` is created", checkK8sServiceIsCreated())
 
@@ -103,14 +124,13 @@ func checkK8sServiceIsCreated() func() {
 	clientSet := e2e.BackgroundContext().ClientSet
 
 	return func() {
-		expectedPort := valuesObject["service"].(map[string]any)["port"].(int)
 		Eventually(func() int {
 			svc, err := clientSet.CoreV1().Services(e2e.BackgroundContext().Namespace).Get(context.TODO(), defaultHelmChartName, metav1.GetOptions{})
 			Expect(err).To(BeNil())
 
 			actualPort := int(svc.Spec.Ports[0].Port)
 			return actualPort
-		}).WithPolling(time.Second * 1).WithTimeout(time.Second * 10).Should(Equal(expectedPort))
+		}).WithPolling(time.Second * 1).WithTimeout(time.Second * 10).Should(Equal(e2eTestPort))
 	}
 }
 
@@ -146,13 +166,12 @@ func getMetricFromEachPodsAndValidateIt() func() {
 
 		nodeNameToLineByLineMetricsMap := make(map[string][]string)
 
-		portNumber := valuesObject["service"].(map[string]any)["port"].(int)
 		for _, pod := range podList.Items {
 			Eventually(func() bool {
 				res := clientSet.CoreV1().RESTClient().Get().
 					Namespace(pod.Namespace).
 					Resource("pods").
-					Name(fmt.Sprintf("%s:%d", pod.Name, portNumber)).
+					Name(fmt.Sprintf("%s:%d", pod.Name, e2eTestTargetPort)).
 					SubResource("proxy").
 					Suffix("metrics").
 					Do(context.TODO())
