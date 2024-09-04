@@ -77,6 +77,27 @@ func init() {
 	if err = yaml.Unmarshal(helmChartValuesYAMLBytes, &valuesObject); err != nil {
 		panic(err)
 	}
+
+	// below block will parse env values and injects them into the `image` section in `values.yaml`
+	{
+		image := valuesObject["image"].(map[string]string)
+
+		e2eTestImageRegistry := os.Getenv("E2E_TEST_IMAGE_REGISTRY")
+		e2eTestImageName := os.Getenv("E2E_TEST_IMAGE_NAME")
+		if e2eTestImageRegistry != "" && e2eTestImageName != "" {
+			// e.g. E2E_TEST_IMAGE_REGISTRY -> registry.corp.furiosa.ai/furiosa
+			// e.g. E2E_TEST_IMAGE_NAME -> furiosa-metrics-exporter
+			image["repository"] = fmt.Sprintf("%s/%s", e2eTestImageRegistry, e2eTestImageName)
+		}
+
+		e2eTestImageTag := os.Getenv("E2E_TEST_IMAGE_TAG")
+		if e2eTestImageTag != "" {
+			// e.g. E2E_TEST_IMAGE_TAG -> latest
+			image["tag"] = e2eTestImageTag
+		}
+
+		valuesObject["image"] = image
+	}
 }
 
 var _ = BeforeSuite(func() { e2e.GenericBeforeSuiteFunc() })
