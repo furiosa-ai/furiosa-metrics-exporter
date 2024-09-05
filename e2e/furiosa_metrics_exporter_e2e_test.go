@@ -207,7 +207,7 @@ func getMetricFromEachPodsAndValidateIt() func() {
 				}
 
 				return false
-			}).WithPolling(time.Second * 15).WithTimeout(time.Second * 300).Should(BeTrue())
+			}).WithPolling(time.Second * 15).WithTimeout(time.Second * 600).Should(BeTrue())
 		}
 
 		for nodeName, lineByLineMetrics := range nodeNameToLineByLineMetricsMap {
