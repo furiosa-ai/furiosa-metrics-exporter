@@ -72,7 +72,7 @@ func getEnv(key, defaultValue string) string {
 
 func composeValues() string {
 	imageRegistry := getEnv("E2E_TEST_IMAGE_REGISTRY", "registry.corp.furiosa.ai/furiosa")
-	imageName := getEnv("E2E_TEST_IMAGE_NAME", "furiosa-feature-discovery")
+	imageName := getEnv("E2E_TEST_IMAGE_NAME", "furiosa-metrics-exporter")
 	imageTag := getEnv("E2E_TEST_IMAGE_TAG", "latest")
 
 	template := fmt.Sprintf(`namespace: kube-system
@@ -86,7 +86,7 @@ daemonSet:
   image:
     repository: %s/%s
     tag: %s
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   resources:
     cpu: 100m
     memory: 64Mi
