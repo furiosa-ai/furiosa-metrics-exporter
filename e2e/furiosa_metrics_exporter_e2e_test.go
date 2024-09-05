@@ -86,7 +86,7 @@ daemonSet:
   image:
     repository: %s/%s
     tag: %s
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   resources:
     cpu: 100m
     memory: 64Mi
