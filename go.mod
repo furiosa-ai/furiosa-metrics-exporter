@@ -3,7 +3,7 @@ module github.com/furiosa-ai/furiosa-metrics-exporter
 go 1.22.6
 
 require (
-	github.com/furiosa-ai/furiosa-smi-go v0.0.1
+	github.com/furiosa-ai/furiosa-smi-go v0.0.2
 	github.com/furiosa-ai/libfuriosa-kubernetes v0.1.27
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
@@ -11,7 +11,6 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/sync v0.8.0
-	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.31.0
 )
 
@@ -137,6 +136,7 @@ require (
 	gopkg.in/evanphx/json-patch.v5 v5.7.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.15.4 // indirect
 	k8s.io/api v0.31.0 // indirect
 	k8s.io/apiextensions-apiserver v0.30.3 // indirect
