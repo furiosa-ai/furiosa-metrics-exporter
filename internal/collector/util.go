@@ -10,11 +10,12 @@ import (
 )
 
 type deviceInfo struct {
-	arch   string
-	device string
-	uuid   string
-	core   string
-	node   string
+	arch        string
+	device      string
+	uuid        string
+	core        string
+	uniqueCores []uint32
+	node        string
 }
 
 func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
@@ -53,10 +54,11 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	nodeName := os.Getenv("NODE_NAME")
 
 	return &deviceInfo{
-		arch:   info.Arch().ToString(),
-		device: filepath.Base(info.Name()),
-		uuid:   info.UUID(),
-		core:   core,
-		node:   nodeName,
+		arch:        info.Arch().ToString(),
+		device:      filepath.Base(info.Name()),
+		uuid:        info.UUID(),
+		core:        core,
+		uniqueCores: uniqueCores,
+		node:        nodeName,
 	}, nil
 }

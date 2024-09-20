@@ -44,18 +44,10 @@ func (t *coreUtilizationCollector) Collect() error {
 	var metricContainer MetricContainer
 
 	for _, d := range t.devices {
-		metric := make(Metric)
-
 		info, err := getDeviceInfo(d)
 		if err != nil {
 			return err
 		}
-
-		metric[arch] = info.arch
-		metric[core] = info.core
-		metric[device] = info.device
-		metric[kubernetesNodeName] = info.node
-		metric[uuid] = info.uuid
 
 		deviceUtilization, err := d.DeviceUtilization()
 		if err != nil {
@@ -64,18 +56,20 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		peUtilizations := deviceUtilization.PeUtilization()
 		for _, pu := range peUtilizations {
-			c, err := strconv.Atoi(info.core)
-			if err != nil {
-				return err
-			}
-
-			if pu.Core() == uint32(c) {
-				metric[peUtilization] = pu.PeUsagePercentage()
-				break
+			for _, c := range info.uniqueCores {
+				if pu.Core() == c {
+					metric := Metric{
+						arch:               info.arch,
+						core:               strconv.Itoa(int(pu.Core())),
+						device:             info.device,
+						kubernetesNodeName: info.node,
+						uuid:               info.uuid,
+						peUtilization:      pu.PeUsagePercentage(),
+					}
+					metricContainer = append(metricContainer, metric)
+				}
 			}
 		}
-
-		metricContainer = append(metricContainer, metric)
 	}
 
 	return t.postProcess(metricContainer)
