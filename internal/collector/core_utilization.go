@@ -33,7 +33,6 @@ func (t *coreUtilizationCollector) Register() {
 		[]string{
 			arch,
 			device,
-			label,
 			core,
 			kubernetesNodeName,
 			uuid,
