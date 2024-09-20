@@ -29,11 +29,20 @@ func (t *coreUtilizationCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_utilization",
 		Help: "The current core utilization of NPU device",
-	}, []string{arch, core, device, kubernetesNodeName, uuid})
+	},
+		[]string{
+			arch,
+			device,
+			label,
+			core,
+			kubernetesNodeName,
+			uuid,
+		})
 }
 
 func (t *coreUtilizationCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0)
+	var metricContainer MetricContainer
+
 	for _, d := range t.devices {
 		metric := make(Metric)
 
