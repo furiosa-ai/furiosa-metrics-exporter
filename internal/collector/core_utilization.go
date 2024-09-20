@@ -1,13 +1,15 @@
 package collector
 
 import (
+	"strconv"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
-	utilization = "utilization"
+	peUtilization = "peUtilization"
 )
 
 type coreUtilizationCollector struct {
@@ -31,7 +33,7 @@ func (t *coreUtilizationCollector) Register() {
 }
 
 func (t *coreUtilizationCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0)
 	for _, d := range t.devices {
 		metric := make(Metric)
 
@@ -51,7 +53,18 @@ func (t *coreUtilizationCollector) Collect() error {
 			return err
 		}
 
-		metric[utilization] = deviceUtilization
+		peUtilizations := deviceUtilization.PeUtilization()
+		for _, pu := range peUtilizations {
+			c, err := strconv.Atoi(info.core)
+			if err != nil {
+				return err
+			}
+
+			if pu.Core() == uint32(c) {
+				metric[peUtilization] = pu.PeUsagePercentage()
+				break
+			}
+		}
 
 		metricContainer = append(metricContainer, metric)
 	}
@@ -61,13 +74,12 @@ func (t *coreUtilizationCollector) Collect() error {
 
 func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
 	for _, metric := range metrics {
-		if value, ok := metric[utilization]; ok {
+		if value, ok := metric[peUtilization]; ok {
 			t.gaugeVec.With(prometheus.Labels{
 				arch:               metric[arch].(string),
 				core:               metric[core].(string),
 				device:             metric[device].(string),
 				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              utilization,
 				uuid:               metric[uuid].(string),
 			}).Set(value.(float64))
 		}
