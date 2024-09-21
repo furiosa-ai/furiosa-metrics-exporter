@@ -53,7 +53,7 @@ func (t *temperatureCollector) Collect() error {
 		metric[arch] = info.arch
 		metric[device] = info.device
 		metric[uuid] = info.uuid
-		metric[core] = info.core
+		metric[core] = info.coreLabel
 		metric[kubernetesNodeName] = info.node
 
 		deviceTemperature, err := d.DeviceTemperature()

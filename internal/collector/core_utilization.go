@@ -1,8 +1,7 @@
 package collector
 
 import (
-	"strconv"
-
+	"fmt"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -53,21 +52,17 @@ func (t *coreUtilizationCollector) Collect() error {
 			return err
 		}
 
-		peUtilizations := deviceUtilization.PeUtilization()
-		for _, pu := range peUtilizations {
-			for _, c := range info.uniqueCores {
-				if pu.Core() == c {
-					metric := Metric{
-						arch:               info.arch,
-						core:               strconv.Itoa(int(pu.Core())),
-						device:             info.device,
-						kubernetesNodeName: info.node,
-						uuid:               info.uuid,
-						peUtilization:      pu.PeUsagePercentage(),
-					}
-					metricContainer = append(metricContainer, metric)
-				}
+		utilization := deviceUtilization.PeUtilization()
+		for _, pe := range utilization {
+			metric := Metric{
+				arch:               info.arch,
+				core:               fmt.Sprintf("%d", pe.Core()),
+				device:             info.device,
+				kubernetesNodeName: info.node,
+				uuid:               info.uuid,
+				peUtilization:      pe.PeUsagePercentage(),
 			}
+			metricContainer = append(metricContainer, metric)
 		}
 	}
 

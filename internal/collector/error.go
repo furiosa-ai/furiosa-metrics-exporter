@@ -60,7 +60,7 @@ func (t *errorCollector) Collect() error {
 		metric[arch] = info.arch
 		metric[device] = info.device
 		metric[uuid] = info.uuid
-		metric[core] = info.core
+		metric[core] = info.coreLabel
 		metric[kubernetesNodeName] = info.node
 
 		errorInfo, err := d.DeviceErrorInfo()
