@@ -49,7 +49,7 @@ func (t *livenessCollector) Collect() error {
 		}
 
 		metric[arch] = info.arch
-		metric[core] = info.core
+		metric[core] = info.coreLabel
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[kubernetesNodeName] = info.node

@@ -1,82 +1,82 @@
 package collector
 
 import (
+	"fmt"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
-	rms = "rms"
+	peUtilization = "peUtilization"
 )
 
-type powerCollector struct {
+type coreUtilizationCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
 }
 
-var _ Collector = (*powerCollector)(nil)
+var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewPowerCollector(devices []smi.Device) Collector {
-	return &powerCollector{
+func NewCoreUtilizationCollector(devices []smi.Device) Collector {
+	return &coreUtilizationCollector{
 		devices: devices,
 	}
 }
 
-func (t *powerCollector) Register() {
+func (t *coreUtilizationCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "furiosa_npu_hw_power",
-		Help: "The current power of NPU device",
+		Name: "furiosa_npu_core_utilization",
+		Help: "The current core utilization of NPU device",
 	},
 		[]string{
 			arch,
 			device,
-			label,
 			core,
 			kubernetesNodeName,
 			uuid,
 		})
 }
 
-func (t *powerCollector) Collect() error {
+func (t *coreUtilizationCollector) Collect() error {
 	var metricContainer MetricContainer
 
 	for _, d := range t.devices {
-		metric := Metric{}
-
 		info, err := getDeviceInfo(d)
 		if err != nil {
 			return err
 		}
 
-		metric[arch] = info.arch
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = info.node
-
-		power, err := d.PowerConsumption()
+		deviceUtilization, err := d.DeviceUtilization()
 		if err != nil {
 			return err
 		}
 
-		metric[rms] = power
-		metricContainer = append(metricContainer, metric)
+		utilization := deviceUtilization.PeUtilization()
+		for _, pe := range utilization {
+			metric := Metric{
+				arch:               info.arch,
+				core:               fmt.Sprintf("%d", pe.Core()),
+				device:             info.device,
+				kubernetesNodeName: info.node,
+				uuid:               info.uuid,
+				peUtilization:      pe.PeUsagePercentage(),
+			}
+			metricContainer = append(metricContainer, metric)
+		}
 	}
 
 	return t.postProcess(metricContainer)
 }
 
-func (t *powerCollector) postProcess(metrics MetricContainer) error {
+func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
 	for _, metric := range metrics {
-		if value, ok := metric["rms"]; ok {
-
+		if value, ok := metric[peUtilization]; ok {
 			t.gaugeVec.With(prometheus.Labels{
 				arch:               metric[arch].(string),
 				core:               metric[core].(string),
 				device:             metric[device].(string),
 				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              rms,
 				uuid:               metric[uuid].(string),
 			}).Set(value.(float64))
 		}

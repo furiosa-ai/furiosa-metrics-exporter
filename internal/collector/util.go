@@ -10,11 +10,12 @@ import (
 )
 
 type deviceInfo struct {
-	arch   string
-	device string
-	uuid   string
-	core   string
-	node   string
+	arch      string
+	device    string
+	uuid      string
+	cores     []uint32
+	coreLabel string
+	node      string
 }
 
 func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
@@ -35,13 +36,13 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 		}
 	}
 
-	uniqueCores := make([]uint32, 0, len(accumulatedCores))
+	cores := make([]uint32, 0, len(accumulatedCores))
 	for core := range accumulatedCores {
-		uniqueCores = append(uniqueCores, core)
+		cores = append(cores, core)
 	}
 
-	start := slices.Min(uniqueCores)
-	end := slices.Max(uniqueCores)
+	start := slices.Min(cores)
+	end := slices.Max(cores)
 
 	var core string
 	if start == end {
@@ -53,10 +54,11 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	nodeName := os.Getenv("NODE_NAME")
 
 	return &deviceInfo{
-		arch:   info.Arch().ToString(),
-		device: filepath.Base(info.Name()),
-		uuid:   info.UUID(),
-		core:   core,
-		node:   nodeName,
+		arch:      info.Arch().ToString(),
+		device:    filepath.Base(info.Name()),
+		uuid:      info.UUID(),
+		cores:     cores,
+		coreLabel: core,
+		node:      nodeName,
 	}, nil
 }
