@@ -12,15 +12,15 @@ daemonSet:
   #   - key: furiosa.ai/npu
   #     operator: Exists
   # add affinity as needed
-  # affinity:
-  #  nodeAffinity:
-  #    requiredDuringSchedulingIgnoredDuringExecution:
-  #      nodeSelectorTerms:
-  #        - matchExpressions:
-  #            - key: feature.node.kubernetes.io/pci-1ed2.present
-  #              operator: In
-  #              values:
-  #                - "true"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: feature.node.kubernetes.io/pci-1ed2.present
+                operator: In
+                values:
+                  - "true"
   image:
     repository: registry.corp.furiosa.ai/furiosa/furiosa-metrics-exporter
     tag: latest
