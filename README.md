@@ -7,12 +7,13 @@ The Furiosa Metrics Exporter exposes collection of metrics related to FuriosaAI 
 The exporter is composed of chain of collectors, each collector is responsible for collecting specific metrics from the Furiosa NPU devices.
 The following table shows the available collectors and metrics:
 
-| Collector Name | Metric                     | Type  | Metric Labels                                         | Description                                      |
-|----------------|----------------------------|-------|-------------------------------------------------------|--------------------------------------------------|
-| Liveness       | furiosa_npu_alive          | gauge | arch, core, device, uuid, kubernetes_node_name        | The liveness of the Furiosa NPU device.          |
-| Error          | furiosa_npu_error          | gauge | arch, core, device, uuid, kubernetes_node_name, label | The error count of the Furiosa NPU device.       |
-| Temperature    | furiosa_npu_hw_temperature | gauge | arch, core, device, uuid, kubernetes_node_name, label | The temperature of the Furiosa NPU device.       |
-| Power          | furiosa_npu_hw_power       | gauge | arch, core, device, uuid, kubernetes_node_name, label | The power consumption of the Furiosa NPU device. |
+| Collector Name   | Metric                       | Type  | Metric Labels                                         | Description                                      |
+|------------------|------------------------------|-------|-------------------------------------------------------|--------------------------------------------------|
+| Liveness         | furiosa_npu_alive            | gauge | arch, core, device, uuid, kubernetes_node_name        | The liveness of the Furiosa NPU device.          |
+| Error            | furiosa_npu_error            | gauge | arch, core, device, uuid, kubernetes_node_name, label | The error count of the Furiosa NPU device.       |
+| Temperature      | furiosa_npu_hw_temperature   | gauge | arch, core, device, uuid, kubernetes_node_name, label | The temperature of the Furiosa NPU device.       |
+| Power            | furiosa_npu_hw_power         | gauge | arch, core, device, uuid, kubernetes_node_name, label | The power consumption of the Furiosa NPU device. |
+| Core Utilization | furiosa_npu_core_utilization | gauge | arch, core, device, uuid, kubernetes_node_name        | The core utilization of the Furiosa NPU device.  |
 
 All metrics share common metric labels such as arch, core, device, kubernetes_node_name, and uuid.
 The following table describes the common metric labels:
@@ -67,6 +68,16 @@ furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_
 
 #power
 furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="rms",uuid="uuid"} 4795000
+
+#core utilization
+furiosa_npu_core_utilization{arch="rngd",core="0",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="1",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="2",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="3",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="4",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="5",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="6",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
 ```
 
 ## Deployment
@@ -74,7 +85,10 @@ furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="
 <!-- add baremetal support here -->
 
 ### Kubernetes
-The helm chart is available at [deployments/helm](deployments/helm) directory. To configure deployment as you need, you can modify [deployments/helm/values.yaml](deployments/helm/values.yaml).
-<!-- add prometheus annotation info here -->
+In a Kubernetes cluster, you can scrape the metrics provided by furiosa-metrics-exporter using Prometheus and visualize them with a Grafana dashboard.
+This can be easily set up using the Prometheus and Grafana Helm charts, along with the furiosa-metrics-exporter Helm chart.
+
+The furiosa-metrics-exporter helm chart is available at [deployments/helm](deployments/helm) directory. To configure deployment as you need, you can modify [deployments/helm/values.yaml](deployments/helm/values.yaml).
+For example, the furiosa-metrics-exporter Helm chart automatically creates a Service Object with Prometheus annotations to enable metric scraping automatically. You can modify the values.yaml to change the port or disable the Prometheus annotations if needed.
 
 The example grafana dashboard is available at [deployments/grafana/npu-dashboard.json](deployments/grafana/npu-dashboard.json) directory.
