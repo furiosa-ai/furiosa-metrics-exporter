@@ -34,10 +34,9 @@ func NewRegisteredPipeline(devices []smi.Device) *Pipeline {
 func (p *Pipeline) Collect() error {
 	errGroup, _ := errgroup.WithContext(context.TODO())
 
-	collectors := p.Collectors
-	for i := range collectors {
+	for i := range p.Collectors {
 		errGroup.Go(func() error {
-			return collectors[i].Collect()
+			return p.Collectors[i].Collect()
 		})
 	}
 
