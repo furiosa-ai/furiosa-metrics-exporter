@@ -508,7 +508,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_core_utilization{kubernetes_node_name=~\"${node}\", core=~\"${core}\", device=~\"${device}\"}",
+          "expr": "furiosa_npu_core_utilization{kubernetes_node_name=~\"${node}\", device=~\"${device}\", core=~\"${core}\"}",
           "interval": "",
           "legendFormat": "{{kubernetes_node_name}}: {{device}}:{{core}}",
           "range": true,
