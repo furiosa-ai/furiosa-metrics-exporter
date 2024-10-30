@@ -3,12 +3,12 @@ package main
 import (
 	"os"
 
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/cmd"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/server"
 )
 
 func main() {
-	cli := cmd.NewCommand()
-	err := cli.Execute()
+	cmd := server.NewCommand()
+	err := cmd.Execute()
 	if err != nil {
 		os.Exit(1)
 	}
