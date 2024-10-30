@@ -1,6 +1,15 @@
 package config
 
-import "os"
+import (
+	"os"
+
+	"github.com/spf13/cobra"
+)
+
+const (
+	defaultPort     = 6254
+	defaultInterval = 10
+)
 
 type Config struct {
 	Port     int    `yaml:"port"`
@@ -8,25 +17,18 @@ type Config struct {
 	NodeName string `yaml:"nodeName"`
 }
 
+func (c *Config) SetFromFlags(cmd *cobra.Command) {
+	cmd.Flags().IntVar(&c.Port, "port", c.Port, "Port to listen on")
+	cmd.Flags().IntVar(&c.Interval, "interval", c.Interval, "Interval in seconds")
+	cmd.Flags().StringVar(&c.NodeName, "node-name", c.NodeName, "Node name")
+}
+
 func NewDefaultConfig() *Config {
 	return &Config{
-		Port:     6254,
-		Interval: 10,
+		Port:     defaultPort,
+		Interval: defaultInterval,
 
-		// Set NodeName from `NODE_NAME` env. If not set, try it with OS HostName.
-		NodeName: func() string {
-			var nodeName string
-			var err error
-
-			nodeName = os.Getenv("NODE_NAME")
-			if nodeName == "" {
-				nodeName, err = os.Hostname()
-				if err != nil {
-					panic(err)
-				}
-			}
-
-			return nodeName
-		}(),
+		// Set NodeName from `NODE_NAME` env. If not set, leave it empty.
+		NodeName: os.Getenv("NODE_NAME"),
 	}
 }

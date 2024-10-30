@@ -15,13 +15,13 @@ import (
 )
 
 func NewCommand() *cobra.Command {
-	// TODO(@hoony9x): Set config data
-	var cfg *config.Config
-
 	cmd := &cobra.Command{
 		Use:   "furiosa-metrics-exporter",
 		Short: "Furiosa Metric Exporter",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := config.NewDefaultConfig()
+			cfg.SetFromFlags(cmd)
+
 			return Run(cmd.Context(), cfg)
 		},
 	}
@@ -29,7 +29,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func Run(ctx context.Context, config *config.Config) error {
+func Run(ctx context.Context, cfg *config.Config) error {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 
@@ -54,7 +54,7 @@ func Run(ctx context.Context, config *config.Config) error {
 
 	// Create Metrics Exporter
 	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(config, devices, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(cfg, devices, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create metrics exporter")
 		return err
