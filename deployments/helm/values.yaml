@@ -32,6 +32,8 @@ daemonSet:
   imagePullSecrets:
   # - name: imagepullsecret
 
+collectInterval: 10
+
 service:
   type: ClusterIP
   port: 6254
