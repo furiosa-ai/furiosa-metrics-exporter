@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/server"
@@ -8,8 +9,8 @@ import (
 
 func main() {
 	cmd := server.NewCommand()
-	err := cmd.Execute()
-	if err != nil {
+	if err := cmd.Execute(); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
