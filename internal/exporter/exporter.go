@@ -13,25 +13,27 @@ import (
 )
 
 type Exporter struct {
-	conf     *config.Config
-	server   *http.Server
-	errChan  chan error
-	pipeline *pipeline.Pipeline
+	collectInterval int
+	server          *http.Server
+	errChan         chan error
+	pipeline        *pipeline.Pipeline
 }
 
 func NewGenericExporter(cfg *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
 	exporter := Exporter{
-		conf:     cfg,
-		errChan:  errChan,
-		pipeline: pipeline.NewRegisteredPipeline(devices),
-	}
+		collectInterval: cfg.Interval,
+		server: &http.Server{
+			Addr: fmt.Sprintf(":%d", cfg.Port),
+			Handler: func() http.Handler {
+				// build Webserver
+				mux := http.NewServeMux()
+				mux.Handle("/metrics", promhttp.Handler())
 
-	// build Webserver
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
-	exporter.server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: mux,
+				return mux
+			}(),
+		},
+		errChan:  errChan,
+		pipeline: pipeline.NewRegisteredPipeline(devices, cfg.NodeName),
 	}
 
 	return &exporter, nil
@@ -40,7 +42,7 @@ func NewGenericExporter(cfg *config.Config, devices []smi.Device, errChan chan e
 func (e *Exporter) Start(ctx context.Context) {
 	//run pipeline
 	go func() {
-		tick := time.NewTicker(time.Second * time.Duration(e.conf.Interval))
+		tick := time.NewTicker(time.Second * time.Duration(e.collectInterval))
 
 		for {
 			select {

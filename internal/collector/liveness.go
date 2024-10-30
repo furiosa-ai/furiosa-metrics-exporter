@@ -13,13 +13,15 @@ const (
 type livenessCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 var _ Collector = (*livenessCollector)(nil)
 
-func NewLivenessCollector(devices []smi.Device) Collector {
+func NewLivenessCollector(devices []smi.Device, nodeName string) Collector {
 	return &livenessCollector{
-		devices: devices,
+		devices:  devices,
+		nodeName: nodeName,
 	}
 }
 
@@ -52,7 +54,7 @@ func (t *livenessCollector) Collect() error {
 		metric[core] = info.coreLabel
 		metric[device] = info.device
 		metric[uuid] = info.uuid
-		metric[kubernetesNodeName] = info.node
+		metric[kubernetesNodeName] = t.nodeName
 
 		value, err := d.Liveness()
 		if err != nil {

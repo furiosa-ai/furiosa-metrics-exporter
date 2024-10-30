@@ -2,6 +2,7 @@ package collector
 
 import (
 	"fmt"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -14,13 +15,15 @@ const (
 type coreUtilizationCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewCoreUtilizationCollector(devices []smi.Device) Collector {
+func NewCoreUtilizationCollector(devices []smi.Device, nodeName string) Collector {
 	return &coreUtilizationCollector{
-		devices: devices,
+		devices:  devices,
+		nodeName: nodeName,
 	}
 }
 
@@ -58,7 +61,7 @@ func (t *coreUtilizationCollector) Collect() error {
 				arch:               info.arch,
 				core:               fmt.Sprintf("%d", pe.Core()),
 				device:             info.device,
-				kubernetesNodeName: info.node,
+				kubernetesNodeName: t.nodeName,
 				uuid:               info.uuid,
 				peUtilization:      pe.PeUsagePercentage(),
 			}

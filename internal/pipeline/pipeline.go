@@ -9,22 +9,22 @@ import (
 )
 
 type Pipeline struct {
-	Collectors []collector.Collector
+	collectors []collector.Collector
 }
 
-func NewRegisteredPipeline(devices []smi.Device) *Pipeline {
+func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
 	p := Pipeline{
-		Collectors: []collector.Collector{
-			collector.NewTemperatureCollector(devices),
-			collector.NewPowerCollector(devices),
-			collector.NewLivenessCollector(devices),
-			collector.NewErrorCollector(devices),
-			collector.NewCoreUtilizationCollector(devices),
-			//collector.NewMemoryCollector(devices),
+		collectors: []collector.Collector{
+			collector.NewTemperatureCollector(devices, nodeName),
+			collector.NewPowerCollector(devices, nodeName),
+			collector.NewLivenessCollector(devices, nodeName),
+			collector.NewErrorCollector(devices, nodeName),
+			collector.NewCoreUtilizationCollector(devices, nodeName),
+			//collector.NewMemoryCollector(devices, nodeName),
 		},
 	}
 
-	for _, c := range p.Collectors {
+	for _, c := range p.collectors {
 		c.Register()
 	}
 
@@ -34,9 +34,9 @@ func NewRegisteredPipeline(devices []smi.Device) *Pipeline {
 func (p *Pipeline) Collect() error {
 	errGroup, _ := errgroup.WithContext(context.TODO())
 
-	for i := range p.Collectors {
+	for i := range p.collectors {
 		errGroup.Go(func() error {
-			return p.Collectors[i].Collect()
+			return p.collectors[i].Collect()
 		})
 	}
 

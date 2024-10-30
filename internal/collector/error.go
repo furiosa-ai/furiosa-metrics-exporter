@@ -21,13 +21,15 @@ const (
 type errorCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 var _ Collector = (*errorCollector)(nil)
 
-func NewErrorCollector(devices []smi.Device) Collector {
+func NewErrorCollector(devices []smi.Device, nodeName string) Collector {
 	return &errorCollector{
-		devices: devices,
+		devices:  devices,
+		nodeName: nodeName,
 	}
 }
 
@@ -61,7 +63,7 @@ func (t *errorCollector) Collect() error {
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = info.node
+		metric[kubernetesNodeName] = t.nodeName
 
 		errorInfo, err := d.DeviceErrorInfo()
 		if err != nil {
