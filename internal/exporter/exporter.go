@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,9 +19,9 @@ type Exporter struct {
 	pipeline *pipeline.Pipeline
 }
 
-func NewGenericExporter(conf *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
+func NewGenericExporter(cfg *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
 	exporter := Exporter{
-		conf:     conf,
+		conf:     cfg,
 		errChan:  errChan,
 		pipeline: pipeline.NewRegisteredPipeline(devices),
 	}
@@ -29,7 +30,7 @@ func NewGenericExporter(conf *config.Config, devices []smi.Device, errChan chan 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	exporter.server = &http.Server{
-		Addr:    ":6254",
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
 		Handler: mux,
 	}
 
