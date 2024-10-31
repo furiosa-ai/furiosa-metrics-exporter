@@ -35,7 +35,7 @@ spec:
             - name: PORT
               value: {{ .Values.service.targetPort }}
             - name: INTERVAL
-              value: {{ .Values.collectInterval }}
+              value: {{ .Values.config.collectInterval }}
           imagePullPolicy: {{ .Values.daemonSet.image.pullPolicy | default "IfNotPresent" }}
           resources:
             requests:
