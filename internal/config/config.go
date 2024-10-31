@@ -2,8 +2,6 @@ package config
 
 import (
 	"os"
-
-	"github.com/spf13/cobra"
 )
 
 const (
@@ -17,10 +15,16 @@ type Config struct {
 	NodeName string `yaml:"nodeName"`
 }
 
-func (c *Config) SetFromFlags(cmd *cobra.Command) {
-	cmd.Flags().IntVar(&c.Port, "port", c.Port, "Port to listen on")
-	cmd.Flags().IntVar(&c.Interval, "interval", c.Interval, "Interval in seconds")
-	cmd.Flags().StringVar(&c.NodeName, "node-name", c.NodeName, "Node name")
+func (c *Config) SetPort(port int) {
+	c.Port = port
+}
+
+func (c *Config) SetInterval(interval int) {
+	c.Interval = interval
+}
+
+func (c *Config) SetNodeName(nodeName string) {
+	c.NodeName = nodeName
 }
 
 func NewDefaultConfig() *Config {

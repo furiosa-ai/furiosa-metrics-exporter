@@ -19,15 +19,33 @@ func NewCommand() *cobra.Command {
 		Use:   "furiosa-metrics-exporter",
 		Short: "Furiosa Metric Exporter",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return start()
+			cfg := config.NewDefaultConfig()
+
+			if port, err := cmd.Flags().GetInt("port"); err != nil {
+				return err
+			} else {
+				cfg.SetPort(port)
+			}
+
+			if interval, err := cmd.Flags().GetInt("interval"); err != nil {
+				return err
+			} else {
+				cfg.SetInterval(interval)
+			}
+
+			if nodeName, err := cmd.Flags().GetString("node-name"); err == nil {
+				cfg.SetNodeName(nodeName)
+			}
+
+			return Run(cmd.Context(), cfg)
 		},
 	}
 
 	return cmd
 }
 
-func start() error {
-	ctx, cancelFunc := context.WithCancel(context.Background())
+func Run(ctx context.Context, cfg *config.Config) error {
+	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 
 	// create core loop logger
@@ -44,9 +62,6 @@ func start() error {
 		close(sigChan)
 	}()
 
-	//get config
-	config := config.NewDefaultConfig()
-
 	devices, err := smi.ListDevices()
 	if err != nil {
 		return err
@@ -54,33 +69,35 @@ func start() error {
 
 	// Create Exporter
 	errChan := make(chan error, 1)
-	exporter, err := exporter.NewGenericExporter(config, devices, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(cfg, devices, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err
 	}
 
-	wrappedCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	// TODO(@hoony9x) 위에 cancelFunc 있는데 왜 또 있죠?
+	//	wrappedCtx, cancel := context.WithCancel(ctx)
+	//	defer cancel()
 
 	// Start Exporter
-	exporter.Start(wrappedCtx)
+	metricsExporter.Start(ctx)
 	logger.Info().Msg("start event loop")
 
 Loop:
 	for {
 		select {
 		case sig := <-sigChan:
-			logger.Err(err).Msg(fmt.Sprintf("signal %d recevied.", sig))
+			logger.Err(err).Msg(fmt.Sprintf("signal %d received.", sig))
 			break Loop
+
 		case errReceived := <-errChan:
-			logger.Err(err).Msg(fmt.Sprintf("error %v recevied.", errReceived))
+			logger.Err(err).Msg(fmt.Sprintf("error %v received.", errReceived))
 			break Loop
 		}
 	}
 
 	logger.Info().Msg("stopping metric server")
-	err = exporter.Stop()
+	err = metricsExporter.Stop()
 	if err != nil {
 		return err
 	}
