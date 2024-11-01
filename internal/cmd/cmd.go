@@ -33,12 +33,26 @@ func NewCommand() *cobra.Command {
 				cfg.SetInterval(interval)
 			}
 
-			if nodeName, err := cmd.Flags().GetString("node-name"); err == nil {
+			if nodeName, err := cmd.Flags().GetString("node-name"); err != nil {
+				return err
+			} else {
 				cfg.SetNodeName(nodeName)
 			}
 
 			return Run(cmd.Context(), cfg)
 		},
+	}
+
+	cmd.Flags().Int("port", 0, "Port number used for metrics server")
+	cmd.Flags().Int("interval", 0, "Collection interval value in second")
+	cmd.Flags().String("node-name", "", "Node name of the current execution environment")
+
+	if err := cmd.MarkFlagRequired("port"); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.MarkFlagRequired("interval"); err != nil {
+		panic(err)
 	}
 
 	return cmd
