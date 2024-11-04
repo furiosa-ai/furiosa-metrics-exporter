@@ -3,10 +3,10 @@ module github.com/furiosa-ai/furiosa-metrics-exporter
 go 1.22.6
 
 require (
-	github.com/furiosa-ai/furiosa-smi-go v0.0.2
-	github.com/furiosa-ai/libfuriosa-kubernetes v0.1.31
+	github.com/furiosa-ai/furiosa-smi-go v0.0.3-0.20241102031342-922912250127
+	github.com/furiosa-ai/libfuriosa-kubernetes v0.1.32-0.20241104053011-9efb3c22c72a
 	github.com/onsi/ginkgo/v2 v2.21.0
-	github.com/onsi/gomega v1.35.0
+	github.com/onsi/gomega v1.35.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
@@ -140,11 +140,11 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.16.1 // indirect
-	k8s.io/api v0.31.1 // indirect
+	k8s.io/api v0.31.2 // indirect
 	k8s.io/apiextensions-apiserver v0.31.1 // indirect
 	k8s.io/apiserver v0.31.1 // indirect
 	k8s.io/cli-runtime v0.31.1 // indirect
-	k8s.io/client-go v0.31.1 // indirect
+	k8s.io/client-go v0.31.2 // indirect
 	k8s.io/component-base v0.31.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
