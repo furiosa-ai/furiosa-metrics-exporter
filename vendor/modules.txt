@@ -141,7 +141,7 @@ github.com/felixge/httpsnoop
 ## explicit; go 1.22.6
 github.com/furiosa-ai/furiosa-smi-go/pkg/smi
 github.com/furiosa-ai/furiosa-smi-go/pkg/smi/binding
-# github.com/furiosa-ai/libfuriosa-kubernetes v0.1.32-0.20241105063112-948a4021d811
+# github.com/furiosa-ai/libfuriosa-kubernetes v0.1.32
 ## explicit; go 1.22.6
 github.com/furiosa-ai/libfuriosa-kubernetes/pkg/e2e
 # github.com/fxamacker/cbor/v2 v2.7.0
