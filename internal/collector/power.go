@@ -13,13 +13,15 @@ const (
 type powerCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 var _ Collector = (*powerCollector)(nil)
 
-func NewPowerCollector(devices []smi.Device) Collector {
+func NewPowerCollector(devices []smi.Device, nodeName string) Collector {
 	return &powerCollector{
-		devices: devices,
+		devices:  devices,
+		nodeName: nodeName,
 	}
 }
 
@@ -53,7 +55,7 @@ func (t *powerCollector) Collect() error {
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = info.node
+		metric[kubernetesNodeName] = t.nodeName
 
 		power, err := d.PowerConsumption()
 		if err != nil {

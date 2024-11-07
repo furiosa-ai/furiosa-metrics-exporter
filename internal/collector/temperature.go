@@ -9,6 +9,7 @@ import (
 type temperatureCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 const (
@@ -18,9 +19,10 @@ const (
 
 var _ Collector = (*temperatureCollector)(nil)
 
-func NewTemperatureCollector(devices []smi.Device) Collector {
+func NewTemperatureCollector(devices []smi.Device, nodeName string) Collector {
 	return &temperatureCollector{
-		devices: devices,
+		devices:  devices,
+		nodeName: nodeName,
 	}
 }
 
@@ -54,7 +56,7 @@ func (t *temperatureCollector) Collect() error {
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = info.node
+		metric[kubernetesNodeName] = t.nodeName
 
 		deviceTemperature, err := d.DeviceTemperature()
 		if err != nil {
