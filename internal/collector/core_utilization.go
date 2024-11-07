@@ -50,12 +50,12 @@ func (t *coreUtilizationCollector) Collect() error {
 			return err
 		}
 
-		deviceUtilization, err := d.DeviceUtilization()
+		coreUtilization, err := d.CoreUtilization()
 		if err != nil {
 			return err
 		}
 
-		utilization := deviceUtilization.PeUtilization()
+		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
 			metric := Metric{
 				arch:               info.arch,
