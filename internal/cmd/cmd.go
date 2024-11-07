@@ -43,8 +43,8 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Int("port", 0, "Port number used for metrics server")
-	cmd.Flags().Int("interval", 0, "Collection interval value in second")
+	cmd.Flags().Int("port", 0, "[Required] Port number used for metrics server")
+	cmd.Flags().Int("interval", 0, "[Required] Collection interval value in second")
 	cmd.Flags().String("node-name", "", "Node name of the current execution environment")
 
 	if err := cmd.MarkFlagRequired("port"); err != nil {
