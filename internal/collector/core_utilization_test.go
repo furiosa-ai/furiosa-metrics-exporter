@@ -1,11 +1,14 @@
 package collector
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/testutil"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 func TestCoreUtilizationCollector_PostProcessing(t *testing.T) {
@@ -48,15 +51,13 @@ furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_
 	cu := &coreUtilizationCollector{}
 	cu.Register()
 	for _, tc := range tests {
-		err := cu.postProcess(tc.source)
-		if err != nil {
-			t.Errorf("unexpected error: %s\n", err)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			err := cu.postProcess(tc.source)
+			assert.NoError(t, err)
 
-		err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")
-		if err != nil {
-			t.Errorf("unexpected error: %s\n", err)
-		}
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")
+			assert.NoError(t, err)
+		})
 	}
 }
 
