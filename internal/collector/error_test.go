@@ -6,6 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorCollector_PostProcessing(t *testing.T) {
@@ -32,9 +33,7 @@ func TestErrorCollector_PostProcessing(t *testing.T) {
 	}
 
 	err := e.postProcess(tc)
-	if err != nil {
-		t.Errorf("unexpected error:%s\n", err)
-	}
+	assert.NoError(t, err)
 
 	expected := `
 # HELP furiosa_npu_error The current active error counts of NPU device
@@ -50,9 +49,7 @@ furiosa_npu_error{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 furiosa_npu_error{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="device_error",uuid="uuid"} 0
 `
 	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_error")
-	if err != nil {
-		t.Errorf("unexpected error:%s\n", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestErrorCollector_Collect(t *testing.T) {

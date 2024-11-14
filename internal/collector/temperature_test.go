@@ -6,6 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTempCollector_PostProcessing(t *testing.T) {
@@ -25,9 +26,7 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 	}
 
 	err := c.postProcess(tc)
-	if err != nil {
-		t.Errorf("unexpected error:%s\n", err)
-	}
+	assert.NoError(t, err)
 
 	expected := `
 # HELP furiosa_npu_hw_temperature The current temperature of NPU device
@@ -36,9 +35,7 @@ furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="ambient",uuid="uuid"} 35
 `
 	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
-	if err != nil {
-		t.Errorf("unexpected error:%s\n", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestTempCollector_Collect(t *testing.T) {

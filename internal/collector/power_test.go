@@ -6,6 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPowerCollector_PostProcessing(t *testing.T) {
@@ -24,9 +25,7 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 	}
 
 	err := p.postProcess(tc)
-	if err != nil {
-		t.Errorf("unexpected error:%s\n", err)
-	}
+	assert.NoError(t, err)
 
 	expected := `
 # HELP furiosa_npu_hw_power The current power of NPU device
@@ -34,9 +33,7 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="rms",uuid="uuid"} 4795000
 `
 	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
-	if err != nil {
-		t.Errorf("unexpected error:%s\n", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestPowerCollector_Collect(t *testing.T) {

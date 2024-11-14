@@ -6,6 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 const head = `
@@ -56,15 +57,13 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 	p := &livenessCollector{}
 	p.Register()
 	for _, tc := range tests {
-		err := p.postProcess(tc.source)
-		if err != nil {
-			t.Errorf("unexpected error:%s\n", err)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			err := p.postProcess(tc.source)
+			assert.NoError(t, err)
 
-		err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
-		if err != nil {
-			t.Errorf("unexpected error:%s\n", err)
-		}
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
+			assert.NoError(t, err)
+		})
 	}
 }
 
