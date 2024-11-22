@@ -89,10 +89,6 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	// TODO(@hoony9x) 위에 cancelFunc 있는데 왜 또 있죠?
-	//	wrappedCtx, cancel := context.WithCancel(ctx)
-	//	defer cancel()
-
 	// Start Exporter
 	metricsExporter.Start(ctx)
 	logger.Info().Msg("start event loop")
