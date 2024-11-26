@@ -31,25 +31,27 @@ func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
 }
 
 func (p *Pipeline) Collect() []error {
-	lock := new(sync.Mutex)
-	wg := new(sync.WaitGroup)
+	errors := make([]error, len(p.collectors))
 
-	errors := make([]error, 0)
+	wg := new(sync.WaitGroup)
 	for i := range p.collectors {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
 			if err := p.collectors[i].Collect(); err != nil {
-				lock.Lock()
-				defer lock.Unlock()
-
-				errors = append(errors, err)
+				errors[i] = err
 			}
 		}()
 	}
-
 	wg.Wait()
 
-	return errors
+	results := make([]error, 0)
+	for i := range errors {
+		if errors[i] != nil {
+			results = append(results, errors[i])
+		}
+	}
+
+	return results
 }
