@@ -45,6 +45,8 @@ func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi
 func (e *Exporter) Start(ctx context.Context) {
 	//run pipeline
 	go func() {
+		tick := time.NewTicker(time.Second * time.Duration(e.collectInterval))
+
 		// When panic happens, send error to the `errChan`, and call `ctx.Done()` to exit.
 		defer func() {
 			if r := recover(); r != nil {
@@ -53,7 +55,6 @@ func (e *Exporter) Start(ctx context.Context) {
 			}
 		}()
 
-		tick := time.NewTicker(time.Second * time.Duration(e.collectInterval))
 		for {
 			select {
 			case <-tick.C:
@@ -72,7 +73,7 @@ func (e *Exporter) Start(ctx context.Context) {
 		err := e.server.ListenAndServe()
 		if err != nil {
 			e.errChan <- err
-			ctx.Done()
+			return
 		}
 	}()
 }

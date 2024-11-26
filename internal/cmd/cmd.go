@@ -98,13 +98,10 @@ Loop:
 		select {
 		case sig := <-sigChan:
 			logger.Error().Msg(fmt.Sprintf("signal %d received.", sig))
-			ctx.Done()
+			break Loop
 
 		case errReceived := <-errChan:
 			logger.Error().Msg(fmt.Sprintf("error %v received.", errReceived))
-			ctx.Done()
-
-		case <-ctx.Done():
 			break Loop
 		}
 	}
