@@ -83,7 +83,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 
 	// Create Exporter
 	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(cfg, devices, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(logger, cfg, devices, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err
@@ -102,6 +102,7 @@ Loop:
 
 		case errReceived := <-errChan:
 			logger.Error().Msg(fmt.Sprintf("error %v received.", errReceived))
+			ctx.Done()
 
 		case <-ctx.Done():
 			break Loop

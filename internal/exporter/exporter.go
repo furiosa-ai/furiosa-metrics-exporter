@@ -10,17 +10,20 @@ import (
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 )
 
 type Exporter struct {
+	logger          zerolog.Logger
 	collectInterval int
 	server          *http.Server
 	errChan         chan error
 	pipeline        *pipeline.Pipeline
 }
 
-func NewGenericExporter(cfg *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
+func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
 	exporter := Exporter{
+		logger:          logger,
 		collectInterval: cfg.Interval,
 		server: &http.Server{
 			Addr: fmt.Sprintf(":%d", cfg.Port),
@@ -54,10 +57,8 @@ func (e *Exporter) Start(ctx context.Context) {
 		for {
 			select {
 			case <-tick.C:
-				// In this block, it just collects errors from `Pipeline.Collect()`
-				// Do not return at this section.
 				for _, err := range e.pipeline.Collect() {
-					e.errChan <- err
+					e.logger.Err(err).Msg(fmt.Sprintf("error %v received from pipeline collector", err))
 				}
 
 			case <-ctx.Done():

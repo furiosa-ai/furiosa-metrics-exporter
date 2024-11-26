@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	"sync"
+
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 )
@@ -29,12 +31,25 @@ func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
 }
 
 func (p *Pipeline) Collect() []error {
+	lock := new(sync.Mutex)
+	wg := new(sync.WaitGroup)
+
 	errors := make([]error, 0)
-	for _, c := range p.collectors {
-		if err := c.Collect(); err != nil {
-			errors = append(errors, err)
-		}
+	for i := range p.collectors {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			if err := p.collectors[i].Collect(); err != nil {
+				lock.Lock()
+				defer lock.Unlock()
+
+				errors = append(errors, err)
+			}
+		}()
 	}
+
+	wg.Wait()
 
 	return errors
 }
