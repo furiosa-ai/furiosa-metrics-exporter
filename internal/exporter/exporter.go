@@ -42,8 +42,15 @@ func NewGenericExporter(cfg *config.Config, devices []smi.Device, errChan chan e
 func (e *Exporter) Start(ctx context.Context) {
 	//run pipeline
 	go func() {
-		tick := time.NewTicker(time.Second * time.Duration(e.collectInterval))
+		// When panic happens, send error to the `errChan`, and call `ctx.Done()` to exit.
+		defer func() {
+			if r := recover(); r != nil {
+				e.errChan <- fmt.Errorf("recovered from panic: %v", r)
+				ctx.Done()
+			}
+		}()
 
+		tick := time.NewTicker(time.Second * time.Duration(e.collectInterval))
 		for {
 			select {
 			case <-tick.C:
