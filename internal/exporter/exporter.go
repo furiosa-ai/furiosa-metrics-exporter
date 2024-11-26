@@ -47,10 +47,10 @@ func (e *Exporter) Start(ctx context.Context) {
 		for {
 			select {
 			case <-tick.C:
-				err := e.pipeline.Collect()
-				if err != nil {
+				// In this block, it just collects errors from `Pipeline.Collect()`
+				// Do not return at this section.
+				for _, err := range e.pipeline.Collect() {
 					e.errChan <- err
-					return
 				}
 
 			case <-ctx.Done():
@@ -64,7 +64,7 @@ func (e *Exporter) Start(ctx context.Context) {
 		err := e.server.ListenAndServe()
 		if err != nil {
 			e.errChan <- err
-			return
+			ctx.Done()
 		}
 	}()
 }
