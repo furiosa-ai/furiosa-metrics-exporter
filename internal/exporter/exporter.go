@@ -52,6 +52,7 @@ func (e *Exporter) Start(ctx context.Context) {
 					e.errChan <- err
 					return
 				}
+
 			case <-ctx.Done():
 				return
 			}
@@ -68,11 +69,12 @@ func (e *Exporter) Start(ctx context.Context) {
 	}()
 }
 
-func (e *Exporter) Stop() error {
+func (e *Exporter) Stop(ctx context.Context) error {
 	//stop web server
-	err := e.server.Shutdown(context.TODO())
+	err := e.server.Shutdown(ctx)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

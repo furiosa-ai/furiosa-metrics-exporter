@@ -107,7 +107,7 @@ Loop:
 	}
 
 	logger.Info().Msg("stopping metric server")
-	err = metricsExporter.Stop()
+	err = metricsExporter.Stop(ctx)
 	if err != nil {
 		return err
 	}
