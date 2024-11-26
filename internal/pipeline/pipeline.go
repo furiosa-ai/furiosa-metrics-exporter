@@ -1,11 +1,10 @@
 package pipeline
 
 import (
-	"context"
+	"sync"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
-	"golang.org/x/sync/errgroup"
 )
 
 type Pipeline struct {
@@ -31,18 +30,28 @@ func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
 	return &p
 }
 
-func (p *Pipeline) Collect() error {
-	errGroup, _ := errgroup.WithContext(context.TODO())
+func (p *Pipeline) Collect() []error {
+	errors := make([]error, len(p.collectors))
 
+	wg := new(sync.WaitGroup)
 	for i := range p.collectors {
-		errGroup.Go(func() error {
-			return p.collectors[i].Collect()
-		})
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			if err := p.collectors[i].Collect(); err != nil {
+				errors[i] = err
+			}
+		}()
+	}
+	wg.Wait()
+
+	results := make([]error, 0)
+	for i := range errors {
+		if errors[i] != nil {
+			results = append(results, errors[i])
+		}
 	}
 
-	if err := errGroup.Wait(); err != nil {
-		return err
-	}
-
-	return nil
+	return results
 }

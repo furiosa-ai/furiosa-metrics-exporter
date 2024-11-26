@@ -83,15 +83,11 @@ func Run(ctx context.Context, cfg *config.Config) error {
 
 	// Create Exporter
 	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(cfg, devices, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(logger, cfg, devices, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err
 	}
-
-	// TODO(@hoony9x) 위에 cancelFunc 있는데 왜 또 있죠?
-	//	wrappedCtx, cancel := context.WithCancel(ctx)
-	//	defer cancel()
 
 	// Start Exporter
 	metricsExporter.Start(ctx)
@@ -101,17 +97,17 @@ Loop:
 	for {
 		select {
 		case sig := <-sigChan:
-			logger.Err(err).Msg(fmt.Sprintf("signal %d received.", sig))
+			logger.Error().Msg(fmt.Sprintf("signal %d received.", sig))
 			break Loop
 
 		case errReceived := <-errChan:
-			logger.Err(err).Msg(fmt.Sprintf("error %v received.", errReceived))
+			logger.Error().Msg(fmt.Sprintf("error %v received.", errReceived))
 			break Loop
 		}
 	}
 
 	logger.Info().Msg("stopping metric server")
-	err = metricsExporter.Stop()
+	err = metricsExporter.Stop(ctx)
 	if err != nil {
 		return err
 	}
