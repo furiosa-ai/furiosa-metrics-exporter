@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"errors"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -17,6 +19,18 @@ const (
 	pcieDoorbellDone = "pcie_doorbell_done"
 	deviceError      = "device_error"
 )
+
+var errorLabels = []string{
+	axiPostError,
+	axiFetchError,
+	axiDiscardError,
+	axiDoorbellDone,
+	pciePostError,
+	pcieFetchError,
+	pcieDiscardError,
+	pcieDoorbellDone,
+	deviceError,
+}
 
 type errorCollector struct {
 	devices  []smi.Device
@@ -49,14 +63,16 @@ func (t *errorCollector) Register() {
 }
 
 func (t *errorCollector) Collect() error {
-	var metricContainer MetricContainer
+	metricContainer := make(MetricContainer, 0, len(t.devices))
 
+	errs := make([]error, 0)
 	for _, d := range t.devices {
 		metric := Metric{}
 
 		info, err := getDeviceInfo(d)
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
 
 		metric[arch] = info.arch
@@ -67,7 +83,8 @@ func (t *errorCollector) Collect() error {
 
 		errorInfo, err := d.DeviceErrorInfo()
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
 
 		metric[axiPostError] = float64(errorInfo.AxiPostErrorCount())
@@ -79,111 +96,36 @@ func (t *errorCollector) Collect() error {
 		metric[pcieDiscardError] = float64(errorInfo.PcieDiscardErrorCount())
 		metric[pcieDoorbellDone] = float64(errorInfo.PcieDoorbellErrorCount())
 		metric[deviceError] = float64(errorInfo.DeviceErrorCount())
+
 		metricContainer = append(metricContainer, metric)
 	}
 
-	return t.postProcess(metricContainer)
+	if err := t.postProcess(metricContainer); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 func (t *errorCollector) postProcess(metrics MetricContainer) error {
+	t.gaugeVec.Reset()
+
 	for _, metric := range metrics {
-		if val, ok := metric[axiPostError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              axiPostError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[axiFetchError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              axiFetchError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[axiDiscardError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              axiDiscardError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[axiDoorbellDone]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              axiDoorbellDone,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[pciePostError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              pciePostError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[pcieFetchError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              pcieFetchError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[pcieDiscardError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              pcieDiscardError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[pcieDoorbellDone]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              pcieDoorbellDone,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
-		}
-
-		if val, ok := metric[deviceError]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				label:              deviceError,
-				core:               metric[core].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(val.(float64))
+		for _, errorLabel := range errorLabels {
+			if val, ok := metric[errorLabel]; ok {
+				t.gaugeVec.With(prometheus.Labels{
+					arch:               metric[arch].(string),
+					device:             metric[device].(string),
+					uuid:               metric[uuid].(string),
+					label:              errorLabel,
+					core:               metric[core].(string),
+					kubernetesNodeName: metric[kubernetesNodeName].(string),
+				}).Set(val.(float64))
+			}
 		}
 	}
 

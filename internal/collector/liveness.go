@@ -1,6 +1,8 @@
 package collector
 
 import (
+	"errors"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -40,14 +42,16 @@ func (t *livenessCollector) Register() {
 }
 
 func (t *livenessCollector) Collect() error {
-	var metricContainer MetricContainer
+	metricContainer := make(MetricContainer, 0, len(t.devices))
 
+	errs := make([]error, 0)
 	for _, d := range t.devices {
 		metric := Metric{}
 
 		info, err := getDeviceInfo(d)
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
 
 		metric[arch] = info.arch
@@ -58,17 +62,28 @@ func (t *livenessCollector) Collect() error {
 
 		value, err := d.Liveness()
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
 
 		metric[liveness] = value
 		metricContainer = append(metricContainer, metric)
 	}
 
-	return t.postProcess(metricContainer)
+	if err := t.postProcess(metricContainer); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 func (t *livenessCollector) postProcess(metrics MetricContainer) error {
+	t.gaugeVec.Reset()
+
 	for _, metric := range metrics {
 		if value, ok := metric[liveness]; ok {
 			var alive float64

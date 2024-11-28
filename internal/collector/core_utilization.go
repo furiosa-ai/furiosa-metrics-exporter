@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
@@ -42,17 +43,20 @@ func (t *coreUtilizationCollector) Register() {
 }
 
 func (t *coreUtilizationCollector) Collect() error {
-	var metricContainer MetricContainer
+	metricContainer := make(MetricContainer, 0, len(t.devices))
 
+	errs := make([]error, 0)
 	for _, d := range t.devices {
 		info, err := getDeviceInfo(d)
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
 
 		coreUtilization, err := d.CoreUtilization()
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
 
 		utilization := coreUtilization.PeUtilization()
@@ -69,10 +73,20 @@ func (t *coreUtilizationCollector) Collect() error {
 		}
 	}
 
-	return t.postProcess(metricContainer)
+	if err := t.postProcess(metricContainer); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
+	t.gaugeVec.Reset()
+
 	for _, metric := range metrics {
 		if value, ok := metric[peUtilization]; ok {
 			t.gaugeVec.With(prometheus.Labels{
