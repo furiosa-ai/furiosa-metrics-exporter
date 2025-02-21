@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,14 +37,14 @@ func TestCoreUtilizationCollector_PostProcessing(t *testing.T) {
 			expected: `
 # HELP furiosa_npu_core_utilization The current core utilization of NPU device
 # TYPE furiosa_npu_core_utilization gauge
-furiosa_npu_core_utilization{arch="rngd",core="0",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="1",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="2",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="3",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="4",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="5",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="6",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="0",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="1",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="2",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="3",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="4",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="5",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="6",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 90
 `,
 		},
 	}
@@ -52,7 +53,14 @@ furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_
 	cu.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			err := cu.postProcess(tc.source)
+			podInfo := kubernetes.PodInfo{
+				Name:      "test",
+				Namespace: "test",
+			}
+			devicePodMap := make(map[string]kubernetes.PodInfo)
+			devicePodMap["uuid"] = podInfo
+
+			err := cu.postProcess(tc.source, devicePodMap)
 			assert.NoError(t, err)
 
 			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")

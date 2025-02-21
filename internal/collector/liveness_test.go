@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,7 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 				},
 			},
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 1
 `,
 		},
 		{
@@ -49,7 +50,7 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 				},
 			},
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 0
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",pod="test",uuid="uuid"} 0
 `,
 		},
 	}
@@ -58,7 +59,14 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 	p.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			err := p.postProcess(tc.source)
+			podInfo := kubernetes.PodInfo{
+				Name:      "test",
+				Namespace: "test",
+			}
+			devicePodMap := make(map[string]kubernetes.PodInfo)
+			devicePodMap["uuid"] = podInfo
+
+			err := p.postProcess(tc.source, devicePodMap)
 			assert.NoError(t, err)
 
 			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
