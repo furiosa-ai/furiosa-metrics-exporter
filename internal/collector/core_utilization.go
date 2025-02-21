@@ -3,7 +3,9 @@ package collector
 import (
 	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -39,10 +41,11 @@ func (t *coreUtilizationCollector) Register() {
 			core,
 			kubernetesNodeName,
 			uuid,
+			pod,
 		})
 }
 
-func (t *coreUtilizationCollector) Collect() error {
+func (t *coreUtilizationCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -73,7 +76,7 @@ func (t *coreUtilizationCollector) Collect() error {
 		}
 	}
 
-	if err := t.postProcess(metricContainer); err != nil {
+	if err := t.postProcess(metricContainer, devicePodMap); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -84,18 +87,27 @@ func (t *coreUtilizationCollector) Collect() error {
 	return nil
 }
 
-func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
+func (t *coreUtilizationCollector) postProcess(metrics MetricContainer, devicePodMap map[string]kubernetes.PodInfo) error {
 	t.gaugeVec.Reset()
 
 	for _, metric := range metrics {
-		if value, ok := metric[peUtilization]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				uuid:               metric[uuid].(string),
-			}).Set(value.(float64))
+		for deviceId, podInfo := range devicePodMap {
+			if strings.Contains(deviceId, metric[uuid].(string)) {
+				if value, ok := metric[peUtilization]; ok {
+					pe_core := fmt.Sprintf("%s", metric[core])
+
+					if kubernetes.ContainsPECore(deviceId, pe_core) {
+						t.gaugeVec.With(prometheus.Labels{
+							arch:               metric[arch].(string),
+							core:               metric[core].(string),
+							device:             metric[device].(string),
+							kubernetesNodeName: metric[kubernetesNodeName].(string),
+							uuid:               metric[uuid].(string),
+							pod:                podInfo.Name,
+						}).Set(value.(float64))
+					}
+				}
+			}
 		}
 	}
 

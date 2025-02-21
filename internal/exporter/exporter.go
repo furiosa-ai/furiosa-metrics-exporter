@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -55,10 +56,28 @@ func (e *Exporter) Start(ctx context.Context) {
 			}
 		}()
 
+		c, cleanup, err := kubernetes.ConnectToServer()
+
+		if err != nil {
+			e.logger.Err(err)
+			return
+		}
+		defer cleanup()
+
 		for {
 			select {
 			case <-tick.C:
-				for _, err := range e.pipeline.Collect() {
+
+				podList, err := kubernetes.ListPods(c)
+
+				if err != nil {
+					e.logger.Err(err)
+					return
+				}
+
+				devicePodMap := kubernetes.GenerateDeviceMap(podList)
+
+				for _, err := range e.pipeline.Collect(devicePodMap) {
 					e.logger.Err(err).Msg(fmt.Sprintf("error %v received from pipeline collector", err))
 				}
 

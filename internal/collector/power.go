@@ -2,7 +2,9 @@ package collector
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -39,10 +41,11 @@ func (t *powerCollector) Register() {
 			core,
 			kubernetesNodeName,
 			uuid,
+			pod,
 		})
 }
 
-func (t *powerCollector) Collect() error {
+func (t *powerCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -71,7 +74,7 @@ func (t *powerCollector) Collect() error {
 		metricContainer = append(metricContainer, metric)
 	}
 
-	if err := t.postProcess(metricContainer); err != nil {
+	if err := t.postProcess(metricContainer, devicePodMap); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -82,20 +85,25 @@ func (t *powerCollector) Collect() error {
 	return nil
 }
 
-func (t *powerCollector) postProcess(metrics MetricContainer) error {
+func (t *powerCollector) postProcess(metrics MetricContainer, devicePodMap map[string]kubernetes.PodInfo) error {
 	t.gaugeVec.Reset()
 
 	for _, metric := range metrics {
-		if value, ok := metric["rms"]; ok {
+		for deviceId, podInfo := range devicePodMap {
+			if value, ok := metric["rms"]; ok {
+				if strings.Contains(deviceId, metric[uuid].(string)) {
 
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              rms,
-				uuid:               metric[uuid].(string),
-			}).Set(value.(float64))
+					t.gaugeVec.With(prometheus.Labels{
+						arch:               metric[arch].(string),
+						core:               metric[core].(string),
+						device:             metric[device].(string),
+						kubernetesNodeName: metric[kubernetesNodeName].(string),
+						label:              rms,
+						uuid:               metric[uuid].(string),
+						pod:                podInfo.Name,
+					}).Set(value.(float64))
+				}
+			}
 		}
 	}
 

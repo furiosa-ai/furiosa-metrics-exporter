@@ -2,7 +2,9 @@ package collector
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -40,10 +42,11 @@ func (t *temperatureCollector) Register() {
 			kubernetesNodeName,
 			label,
 			uuid,
+			pod,
 		})
 }
 
-func (t *temperatureCollector) Collect() error {
+func (t *temperatureCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -73,7 +76,7 @@ func (t *temperatureCollector) Collect() error {
 		metricContainer = append(metricContainer, metric)
 	}
 
-	if err := t.postProcess(metricContainer); err != nil {
+	if err := t.postProcess(metricContainer, devicePodMap); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -84,31 +87,37 @@ func (t *temperatureCollector) Collect() error {
 	return nil
 }
 
-func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
+func (t *temperatureCollector) postProcess(metrics MetricContainer, devicePodMap map[string]kubernetes.PodInfo) error {
 	t.gaugeVec.Reset()
 
 	for _, metric := range metrics {
-		if value, ok := metric[ambient]; ok {
+		for deviceId, podInfo := range devicePodMap {
+			if strings.Contains(deviceId, metric[uuid].(string)) {
+				if value, ok := metric[ambient]; ok {
 
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              ambient,
-				uuid:               metric[uuid].(string),
-			}).Set(value.(float64))
-		}
+					t.gaugeVec.With(prometheus.Labels{
+						arch:               metric[arch].(string),
+						core:               metric[core].(string),
+						device:             metric[device].(string),
+						kubernetesNodeName: metric[kubernetesNodeName].(string),
+						label:              ambient,
+						uuid:               metric[uuid].(string),
+						pod:                podInfo.Name,
+					}).Set(value.(float64))
+				}
 
-		if value, ok := metric[peak]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              peak,
-				uuid:               metric[uuid].(string),
-			}).Set(value.(float64))
+				if value, ok := metric[peak]; ok {
+					t.gaugeVec.With(prometheus.Labels{
+						arch:               metric[arch].(string),
+						core:               metric[core].(string),
+						device:             metric[device].(string),
+						kubernetesNodeName: metric[kubernetesNodeName].(string),
+						label:              peak,
+						uuid:               metric[uuid].(string),
+						pod:                podInfo.Name,
+					}).Set(value.(float64))
+				}
+			}
 		}
 	}
 

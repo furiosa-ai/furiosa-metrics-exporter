@@ -2,7 +2,9 @@ package collector
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -38,10 +40,11 @@ func (t *livenessCollector) Register() {
 			device,
 			kubernetesNodeName,
 			uuid,
+			pod,
 		})
 }
 
-func (t *livenessCollector) Collect() error {
+func (t *livenessCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -70,7 +73,7 @@ func (t *livenessCollector) Collect() error {
 		metricContainer = append(metricContainer, metric)
 	}
 
-	if err := t.postProcess(metricContainer); err != nil {
+	if err := t.postProcess(metricContainer, devicePodMap); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -81,25 +84,30 @@ func (t *livenessCollector) Collect() error {
 	return nil
 }
 
-func (t *livenessCollector) postProcess(metrics MetricContainer) error {
+func (t *livenessCollector) postProcess(metrics MetricContainer, devicePodMap map[string]kubernetes.PodInfo) error {
 	t.gaugeVec.Reset()
 
 	for _, metric := range metrics {
-		if value, ok := metric[liveness]; ok {
-			var alive float64
-			if value.(bool) {
-				alive = 1
-			} else {
-				alive = 0
-			}
+		for deviceid, podInfo := range devicePodMap {
+			if value, ok := metric[liveness]; ok {
+				var alive float64
+				if value.(bool) {
+					alive = 1
+				} else {
+					alive = 0
+				}
 
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-			}).Set(alive)
+				if strings.Contains(deviceid, metric[uuid].(string)) {
+					t.gaugeVec.With(prometheus.Labels{
+						arch:               metric[arch].(string),
+						core:               metric[core].(string),
+						device:             metric[device].(string),
+						uuid:               metric[uuid].(string),
+						kubernetesNodeName: metric[kubernetesNodeName].(string),
+						pod:                podInfo.Name,
+					}).Set(alive)
+				}
+			}
 		}
 	}
 

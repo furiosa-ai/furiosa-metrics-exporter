@@ -7,4 +7,5 @@ const (
 	uuid               = "uuid"
 	core               = "core"
 	kubernetesNodeName = "kubernetes_node_name"
+	pod                = "pod"
 )
