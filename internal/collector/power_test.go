@@ -11,8 +11,11 @@ import (
 )
 
 func TestPowerCollector_PostProcessing(t *testing.T) {
+
+	registryWithPod := prometheus.NewRegistry()
+
 	p := &powerCollector{}
-	p.Register()
+	p.Register(registryWithPod)
 
 	tc := MetricContainer{
 		{
@@ -39,7 +42,10 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 # TYPE furiosa_npu_hw_power gauge
 furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="rms",pod="test",uuid="uuid"} 4795000
 `
-	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
+
+	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
+
+	err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
 	assert.NoError(t, err)
 }
 

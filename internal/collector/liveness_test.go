@@ -55,8 +55,10 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 		},
 	}
 
+	registryWithPod := prometheus.NewRegistry()
+
 	p := &livenessCollector{}
-	p.Register()
+	p.Register(registryWithPod)
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			podInfo := kubernetes.PodInfo{
@@ -69,7 +71,9 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 			err := p.postProcess(tc.source, devicePodMap)
 			assert.NoError(t, err)
 
-			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
+			combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
+
+			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
 			assert.NoError(t, err)
 		})
 	}

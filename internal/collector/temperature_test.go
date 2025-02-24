@@ -11,8 +11,10 @@ import (
 )
 
 func TestTempCollector_PostProcessing(t *testing.T) {
+	registryWithPod := prometheus.NewRegistry()
+
 	c := &temperatureCollector{}
-	c.Register()
+	c.Register(registryWithPod)
 
 	tc := MetricContainer{
 		{
@@ -41,7 +43,9 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="peak",pod="test",uuid="uuid"} 39
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="ambient",pod="test",uuid="uuid"} 35
 `
-	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
+	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
+
+	err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
 	assert.NoError(t, err)
 }
 

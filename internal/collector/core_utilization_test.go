@@ -49,8 +49,10 @@ furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_
 		},
 	}
 
+	registryWithPod := prometheus.NewRegistry()
+
 	cu := &coreUtilizationCollector{}
-	cu.Register()
+	cu.Register(registryWithPod)
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			podInfo := kubernetes.PodInfo{
@@ -63,7 +65,9 @@ furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_
 			err := cu.postProcess(tc.source, devicePodMap)
 			assert.NoError(t, err)
 
-			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")
+			combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
+
+			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")
 			assert.NoError(t, err)
 		})
 	}
