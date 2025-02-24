@@ -105,3 +105,15 @@ func ContainsPECore(deviceID string, core string) bool {
 		}
 	}
 }
+
+func GetCoreNum(deviceID string) string {
+	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
+		return "0-7"
+	} else {
+		return strings.Split(deviceID, furiosaPartitionedResourcePattern)[1]
+	}
+}
+
+func IsPartionedDevice(deviceID string) bool {
+	return strings.Contains(deviceID, furiosaPartitionedResourcePattern)
+}

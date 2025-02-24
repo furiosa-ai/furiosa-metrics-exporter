@@ -15,9 +15,10 @@ const (
 )
 
 type powerCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices         []smi.Device
+	gaugeVec        *prometheus.GaugeVec
+	gaugeVecWithPod *prometheus.GaugeVec
+	nodeName        string
 }
 
 var _ Collector = (*powerCollector)(nil)
@@ -29,8 +30,21 @@ func NewPowerCollector(devices []smi.Device, nodeName string) Collector {
 	}
 }
 
-func (t *powerCollector) Register() {
+func (t *powerCollector) Register(registryWithPod *prometheus.Registry) {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "furiosa_npu_hw_power",
+		Help: "The current power of NPU device",
+	},
+		[]string{
+			arch,
+			device,
+			label,
+			core,
+			kubernetesNodeName,
+			uuid,
+		})
+
+	t.gaugeVecWithPod = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_power",
 		Help: "The current power of NPU device",
 	},
@@ -43,6 +57,7 @@ func (t *powerCollector) Register() {
 			uuid,
 			pod,
 		})
+	registryWithPod.MustRegister(t.gaugeVecWithPod)
 }
 
 func (t *powerCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) error {
@@ -58,11 +73,22 @@ func (t *powerCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) err
 			continue
 		}
 
+		isPodExists := false
+		for deviceID := range devicePodMap {
+			if strings.Contains(deviceID, info.uuid) {
+				isPodExists = true
+				break
+			}
+		}
+
 		metric[arch] = info.arch
 		metric[device] = info.device
 		metric[uuid] = info.uuid
 		metric[core] = info.coreLabel
 		metric[kubernetesNodeName] = t.nodeName
+		if isPodExists {
+			metric[pod] = devicePodMap[info.uuid].Name
+		}
 
 		power, err := d.PowerConsumption()
 		if err != nil {
@@ -87,15 +113,17 @@ func (t *powerCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) err
 
 func (t *powerCollector) postProcess(metrics MetricContainer, devicePodMap map[string]kubernetes.PodInfo) error {
 	t.gaugeVec.Reset()
+	t.gaugeVecWithPod.Reset()
 
 	for _, metric := range metrics {
-		for deviceId, podInfo := range devicePodMap {
-			if value, ok := metric["rms"]; ok {
-				if strings.Contains(deviceId, metric[uuid].(string)) {
+		if value, ok := metric["rms"]; ok {
+			for deviceID, podInfo := range devicePodMap {
+				if strings.Contains(deviceID, metric[uuid].(string)) {
+					coreNum := kubernetes.GetCoreNum(deviceID)
 
-					t.gaugeVec.With(prometheus.Labels{
+					t.gaugeVecWithPod.With(prometheus.Labels{
 						arch:               metric[arch].(string),
-						core:               metric[core].(string),
+						core:               coreNum,
 						device:             metric[device].(string),
 						kubernetesNodeName: metric[kubernetesNodeName].(string),
 						label:              rms,
@@ -103,6 +131,16 @@ func (t *powerCollector) postProcess(metrics MetricContainer, devicePodMap map[s
 						pod:                podInfo.Name,
 					}).Set(value.(float64))
 				}
+			}
+			if _, ok := devicePodMap[metric[uuid].(string)]; !ok {
+				t.gaugeVec.With(prometheus.Labels{
+					arch:               metric[arch].(string),
+					core:               metric[core].(string),
+					device:             metric[device].(string),
+					kubernetesNodeName: metric[kubernetesNodeName].(string),
+					label:              rms,
+					uuid:               metric[uuid].(string),
+				}).Set(value.(float64))
 			}
 		}
 	}
