@@ -76,6 +76,12 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		close(sigChan)
 	}()
 
+	err := smi.Init()
+
+	if err != nil {
+		return err
+	}
+
 	devices, err := smi.ListDevices()
 	if err != nil {
 		return err
