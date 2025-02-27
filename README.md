@@ -24,6 +24,7 @@ The following table describes the common metric labels:
 | device               | The device name of the Furiosa NPU device. e.g. npu0                                                                                                                 |
 | kubernetes_node_name | The name of the Kubernetes node where the exporter is running, this attribute can be missing if the exporter is running on the host machine or in a naked container. |
 | uuid                 | The UUID of the Furiosa NPU device.                                                                                                                                  |
+| pod                  | (Conditional) The name of the Kubernetes pod associated with the metric. This label exists only when the Furiosa NPU device is assigned to a pod.                     |
 
 The metric label “label” is used to describe additional attributes specific to each metric.
 This approach helps avoid having too many metric definitions and effectively aggregates metrics that share common characteristics.
