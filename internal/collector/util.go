@@ -2,7 +2,6 @@ package collector
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
@@ -51,7 +50,7 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 
 	return &deviceInfo{
 		arch:      info.Arch().ToString(),
-		device:    filepath.Base(info.Name()),
+		device:    info.Name(),
 		uuid:      info.UUID(),
 		cores:     cores,
 		coreLabel: core,
