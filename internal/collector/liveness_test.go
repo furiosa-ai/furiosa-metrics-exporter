@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +30,7 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 					uuid:               "uuid",
 					kubernetesNodeName: "node",
 					liveness:           true,
+					pod:                "test",
 				},
 			},
 			expected: `
@@ -47,6 +47,7 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 					uuid:               "uuid",
 					kubernetesNodeName: "node",
 					liveness:           false,
+					pod:                "test",
 				},
 			},
 			expected: `
@@ -55,25 +56,14 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="nod
 		},
 	}
 
-	registryWithPod := prometheus.NewRegistry()
-
 	p := &livenessCollector{}
-	p.Register(registryWithPod)
+	p.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			podInfo := kubernetes.PodInfo{
-				Name:      "test",
-				Namespace: "test",
-			}
-			devicePodMap := make(map[string]kubernetes.PodInfo)
-			devicePodMap["uuid"] = podInfo
-
-			err := p.postProcess(tc.source, devicePodMap)
+			err := p.postProcess(tc.source)
 			assert.NoError(t, err)
 
-			combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
-			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
 			assert.NoError(t, err)
 		})
 	}

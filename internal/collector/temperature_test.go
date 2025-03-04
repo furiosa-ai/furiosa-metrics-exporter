@@ -4,17 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTempCollector_PostProcessing(t *testing.T) {
-	registryWithPod := prometheus.NewRegistry()
-
 	c := &temperatureCollector{}
-	c.Register(registryWithPod)
+	c.Register()
 
 	tc := MetricContainer{
 		{
@@ -25,16 +22,10 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 			kubernetesNodeName: "node",
 			ambient:            float64(35),
 			peak:               float64(39),
+			pod:                "test",
 		},
 	}
-	podInfo := kubernetes.PodInfo{
-		Name:      "test",
-		Namespace: "test",
-	}
-	devicePodMap := make(map[string]kubernetes.PodInfo)
-	devicePodMap["uuid"] = podInfo
-
-	err := c.postProcess(tc, devicePodMap)
+	err := c.postProcess(tc)
 	assert.NoError(t, err)
 
 	expected := `
@@ -43,9 +34,7 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="peak",pod="test",uuid="uuid"} 39
 furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="ambient",pod="test",uuid="uuid"} 35
 `
-	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
-	err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
+	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
 	assert.NoError(t, err)
 }
 

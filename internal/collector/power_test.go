@@ -4,18 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPowerCollector_PostProcessing(t *testing.T) {
-
-	registryWithPod := prometheus.NewRegistry()
-
 	p := &powerCollector{}
-	p.Register(registryWithPod)
+	p.Register()
 
 	tc := MetricContainer{
 		{
@@ -25,16 +21,10 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 			kubernetesNodeName: "node",
 			rms:                float64(4795000),
 			uuid:               "uuid",
+			pod:                "test",
 		},
 	}
-	podInfo := kubernetes.PodInfo{
-		Name:      "test",
-		Namespace: "test",
-	}
-	devicePodMap := make(map[string]kubernetes.PodInfo)
-	devicePodMap["uuid"] = podInfo
-
-	err := p.postProcess(tc, devicePodMap)
+	err := p.postProcess(tc)
 	assert.NoError(t, err)
 
 	expected := `
@@ -43,9 +33,7 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="rms",pod="test",uuid="uuid"} 4795000
 `
 
-	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
-	err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
+	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
 	assert.NoError(t, err)
 }
 

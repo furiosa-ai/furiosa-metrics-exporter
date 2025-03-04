@@ -83,7 +83,7 @@ func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map
 					}
 
 					uuid := strings.Split(deviceID, furiosaPartitionedResourcePattern)[0]
-					deviceMap[uuid] = append(deviceMap[deviceID], podInfo)
+					deviceMap[uuid] = append(deviceMap[uuid], podInfo)
 				}
 			}
 		}

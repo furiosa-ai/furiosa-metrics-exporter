@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,6 +29,7 @@ func TestCoreUtilizationCollector_PostProcessing(t *testing.T) {
 						kubernetesNodeName: "node",
 						uuid:               "uuid",
 						peUtilization:      float64(90),
+						pod:                "test",
 					})
 				}
 				return tc
@@ -49,25 +49,15 @@ furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",kubernetes_node_
 		},
 	}
 
-	registryWithPod := prometheus.NewRegistry()
-
 	cu := &coreUtilizationCollector{}
-	cu.Register(registryWithPod)
+	cu.Register()
+
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			podInfo := kubernetes.PodInfo{
-				Name:      "test",
-				Namespace: "test",
-			}
-			devicePodMap := make(map[string]kubernetes.PodInfo)
-			devicePodMap["uuid"] = podInfo
-
-			err := cu.postProcess(tc.source, devicePodMap)
+			err := cu.postProcess(tc.source)
 			assert.NoError(t, err)
 
-			combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
-			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_utilization")
 			assert.NoError(t, err)
 		})
 	}
