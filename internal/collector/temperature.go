@@ -2,7 +2,6 @@ package collector
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
@@ -11,10 +10,9 @@ import (
 )
 
 type temperatureCollector struct {
-	devices         []smi.Device
-	gaugeVec        *prometheus.GaugeVec
-	gaugeVecWithPod *prometheus.GaugeVec
-	nodeName        string
+	devices  []smi.Device
+	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 const (
@@ -31,21 +29,8 @@ func NewTemperatureCollector(devices []smi.Device, nodeName string) Collector {
 	}
 }
 
-func (t *temperatureCollector) Register(registryWithPod *prometheus.Registry) {
+func (t *temperatureCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "furiosa_npu_hw_temperature",
-		Help: "The current temperature of NPU device",
-	},
-		[]string{
-			arch,
-			core,
-			device,
-			kubernetesNodeName,
-			label,
-			uuid,
-		})
-
-	t.gaugeVecWithPod = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
 		Help: "The current temperature of NPU device",
 	},
@@ -58,10 +43,9 @@ func (t *temperatureCollector) Register(registryWithPod *prometheus.Registry) {
 			uuid,
 			pod,
 		})
-	registryWithPod.MustRegister(t.gaugeVecWithPod)
 }
 
-func (t *temperatureCollector) Collect(devicePodMap map[string]kubernetes.PodInfo) error {
+func (t *temperatureCollector) Collect(devicePodMap map[string][]kubernetes.PodInfo) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -74,35 +58,54 @@ func (t *temperatureCollector) Collect(devicePodMap map[string]kubernetes.PodInf
 			continue
 		}
 
-		isPodExists := false
-		for deviceID := range devicePodMap {
-			if strings.Contains(deviceID, info.uuid) {
-				isPodExists = true
-				break
-			}
-		}
-
-		metric[arch] = info.arch
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = t.nodeName
-		if isPodExists {
-			metric[pod] = devicePodMap[info.uuid].Name
-		}
-
 		deviceTemperature, err := d.DeviceTemperature()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		metric[ambient] = deviceTemperature.Ambient()
-		metric[peak] = deviceTemperature.SocPeak()
-		metricContainer = append(metricContainer, metric)
+		if podInfos, ok := devicePodMap[info.uuid]; ok {
+			if !(len(podInfos) == 1 && len(podInfos[0].AllocatedPE) == 8) {
+				metric[arch] = info.arch
+				metric[device] = info.device
+				metric[uuid] = info.uuid
+				metric[core] = info.coreLabel
+				metric[kubernetesNodeName] = t.nodeName
+				metric[pod] = ""
+				metric[ambient] = deviceTemperature.Ambient()
+				metric[peak] = deviceTemperature.SocPeak()
+
+				metricContainer = append(metricContainer, metric)
+			}
+
+			for _, podInfo := range podInfos {
+				metric := Metric{}
+				metric[arch] = info.arch
+				metric[core] = podInfo.CoreLabel
+				metric[device] = info.device
+				metric[uuid] = info.uuid
+				metric[kubernetesNodeName] = t.nodeName
+				metric[pod] = podInfo.Name
+				metric[ambient] = deviceTemperature.Ambient()
+				metric[peak] = deviceTemperature.SocPeak()
+
+				metricContainer = append(metricContainer, metric)
+			}
+		} else {
+			metric[arch] = info.arch
+			metric[device] = info.device
+			metric[uuid] = info.uuid
+			metric[core] = info.coreLabel
+			metric[kubernetesNodeName] = t.nodeName
+			metric[pod] = ""
+			metric[ambient] = deviceTemperature.Ambient()
+			metric[peak] = deviceTemperature.SocPeak()
+
+			metricContainer = append(metricContainer, metric)
+		}
 	}
 
-	if err := t.postProcess(metricContainer, devicePodMap); err != nil {
+	if err := t.postProcess(metricContainer); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -113,64 +116,32 @@ func (t *temperatureCollector) Collect(devicePodMap map[string]kubernetes.PodInf
 	return nil
 }
 
-func (t *temperatureCollector) postProcess(metrics MetricContainer, devicePodMap map[string]kubernetes.PodInfo) error {
+func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
 	t.gaugeVec.Reset()
-	t.gaugeVecWithPod.Reset()
 
 	for _, metric := range metrics {
 		if value, ok := metric[ambient]; ok {
-			for deviceID, podInfo := range devicePodMap {
-				if strings.Contains(deviceID, metric[uuid].(string)) {
-					coreNum := kubernetes.GetCoreNum(deviceID)
-
-					t.gaugeVecWithPod.With(prometheus.Labels{
-						arch:               metric[arch].(string),
-						core:               coreNum,
-						device:             metric[device].(string),
-						kubernetesNodeName: metric[kubernetesNodeName].(string),
-						label:              ambient,
-						uuid:               metric[uuid].(string),
-						pod:                podInfo.Name,
-					}).Set(value.(float64))
-				}
-			}
-			if _, ok := devicePodMap[metric[uuid].(string)]; !ok {
-				t.gaugeVec.With(prometheus.Labels{
-					arch:               metric[arch].(string),
-					core:               metric[core].(string),
-					device:             metric[device].(string),
-					kubernetesNodeName: metric[kubernetesNodeName].(string),
-					label:              ambient,
-					uuid:               metric[uuid].(string),
-				}).Set(value.(float64))
-			}
+			t.gaugeVec.With(prometheus.Labels{
+				arch:               metric[arch].(string),
+				core:               metric[core].(string),
+				device:             metric[device].(string),
+				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				label:              ambient,
+				uuid:               metric[uuid].(string),
+				pod:                metric[pod].(string),
+			}).Set(value.(float64))
 		}
 
 		if value, ok := metric[peak]; ok {
-			for deviceID, podInfo := range devicePodMap {
-				if strings.Contains(deviceID, metric[uuid].(string)) {
-					coreNum := kubernetes.GetCoreNum(deviceID)
-					t.gaugeVecWithPod.With(prometheus.Labels{
-						arch:               metric[arch].(string),
-						core:               coreNum,
-						device:             metric[device].(string),
-						kubernetesNodeName: metric[kubernetesNodeName].(string),
-						label:              peak,
-						uuid:               metric[uuid].(string),
-						pod:                podInfo.Name,
-					}).Set(value.(float64))
-				}
-			}
-			if _, ok := devicePodMap[metric[uuid].(string)]; !ok {
-				t.gaugeVec.With(prometheus.Labels{
-					arch:               metric[arch].(string),
-					core:               metric[core].(string),
-					device:             metric[device].(string),
-					kubernetesNodeName: metric[kubernetesNodeName].(string),
-					label:              peak,
-					uuid:               metric[uuid].(string),
-				}).Set(value.(float64))
-			}
+			t.gaugeVec.With(prometheus.Labels{
+				arch:               metric[arch].(string),
+				core:               metric[core].(string),
+				device:             metric[device].(string),
+				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				label:              peak,
+				uuid:               metric[uuid].(string),
+				pod:                metric[pod].(string),
+			}).Set(value.(float64))
 		}
 	}
 

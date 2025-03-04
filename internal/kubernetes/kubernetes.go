@@ -22,8 +22,10 @@ const (
 )
 
 type PodInfo struct {
-	Name      string
-	Namespace string
+	Name        string
+	Namespace   string
+	AllocatedPE []int
+	CoreLabel   string
 }
 
 func ConnectToServer() (*grpc.ClientConn, func(), error) {
@@ -57,8 +59,8 @@ func ListPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse,
 	return resp, nil
 }
 
-func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map[string]PodInfo {
-	deviceMap := make(map[string]PodInfo)
+func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map[string][]PodInfo {
+	deviceMap := make(map[string][]PodInfo)
 
 	for _, pod := range devicePods.GetPodResources() {
 		for _, container := range pod.GetContainers() {
@@ -72,15 +74,16 @@ func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map
 				podName := pod.GetName()
 				podNamespace := pod.GetNamespace()
 
-				podInfo := PodInfo{
-					Name:      podName,
-					Namespace: podNamespace,
-				}
-
 				for _, deviceID := range device.GetDeviceIds() {
-					// TODO(jongchan): partitioned device case
+					podInfo := PodInfo{
+						Name:        podName,
+						Namespace:   podNamespace,
+						AllocatedPE: getAllocatedPE(deviceID),
+						CoreLabel:   GetCoreLabel(deviceID),
+					}
 
-					deviceMap[deviceID] = podInfo
+					uuid := strings.Split(deviceID, furiosaPartitionedResourcePattern)[0]
+					deviceMap[uuid] = append(deviceMap[deviceID], podInfo)
 				}
 			}
 		}
@@ -89,26 +92,30 @@ func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map
 
 }
 
-func ContainsPECore(deviceID string, core string) bool {
+func getAllocatedPE(deviceID string) []int {
 	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
-		return true
+		return []int{0, 1, 2, 3, 4, 5, 6, 7} // TODO(jongchan): warboy case?
 	} else {
 		cores := strings.Split(deviceID, furiosaPartitionedResourcePattern)[1]
 		coreRange := strings.Split(cores, "-")
 		if len(coreRange) == 1 {
-			return coreRange[0] == core
+			n, _ := strconv.Atoi(coreRange[0])
+			return []int{n}
 		} else {
 			n, _ := strconv.Atoi(coreRange[0])
 			m, _ := strconv.Atoi(coreRange[1])
-			coreNum, _ := strconv.Atoi(core)
-			return coreNum >= n && coreNum <= m
+			allocatedPE := []int{}
+			for i := n; i <= m; i++ {
+				allocatedPE = append(allocatedPE, i)
+			}
+			return allocatedPE
 		}
 	}
 }
 
-func GetCoreNum(deviceID string) string {
+func GetCoreLabel(deviceID string) string {
 	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
-		return "0-7"
+		return "0-7" // TODO(jongchan): warboy case?
 	} else {
 		return strings.Split(deviceID, furiosaPartitionedResourcePattern)[1]
 	}
