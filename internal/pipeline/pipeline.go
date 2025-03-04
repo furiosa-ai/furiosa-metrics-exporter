@@ -1,14 +1,12 @@
 package pipeline
 
 import (
-	"net/http"
 	"sync"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Pipeline struct {
@@ -26,11 +24,6 @@ func NewRegisteredPipeline(devices []smi.Device, nodeName string, registryWithPo
 			//collector.NewMemoryCollector(devices, nodeName),
 		},
 	}
-
-	http.Handle("/metrics", promhttp.HandlerFor(prometheus.Gatherers{
-		prometheus.DefaultGatherer,
-		registryWithPod,
-	}, promhttp.HandlerOpts{}))
 
 	for _, c := range p.collectors {
 		c.Register(registryWithPod)
