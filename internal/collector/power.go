@@ -64,7 +64,7 @@ func (t *powerCollector) Collect(devicePodMap map[string][]kubernetes.PodInfo) e
 		}
 
 		if PodInfos, ok := devicePodMap[info.uuid]; ok {
-			if !(len(PodInfos) == 1 && len(PodInfos[0].AllocatedPE) == 8) {
+			if !(len(PodInfos) == 1 && len(PodInfos[0].AllocatedPE) == 8) { // Partitioned device allocation case. Add original card metric.
 				metric[arch] = info.arch
 				metric[device] = info.device
 				metric[uuid] = info.uuid
@@ -88,7 +88,7 @@ func (t *powerCollector) Collect(devicePodMap map[string][]kubernetes.PodInfo) e
 
 				metricContainer = append(metricContainer, metric)
 			}
-		} else {
+		} else { // Non-allocated device case
 			metric[arch] = info.arch
 			metric[device] = info.device
 			metric[uuid] = info.uuid

@@ -63,7 +63,7 @@ func (t *livenessCollector) Collect(devicePodMap map[string][]kubernetes.PodInfo
 		}
 
 		if podInfos, ok := devicePodMap[info.uuid]; ok {
-			if !(len(podInfos) == 1 && len(podInfos[0].AllocatedPE) == 8) {
+			if !(len(podInfos) == 1 && len(podInfos[0].AllocatedPE) == 8) { // Partitioned device allocation case. Add original card metric.
 				metric[arch] = info.arch
 				metric[core] = info.coreLabel
 				metric[device] = info.device
@@ -87,7 +87,7 @@ func (t *livenessCollector) Collect(devicePodMap map[string][]kubernetes.PodInfo
 
 				metricContainer = append(metricContainer, metric)
 			}
-		} else {
+		} else { // Non-allocated device case
 			metric[arch] = info.arch
 			metric[core] = info.coreLabel
 			metric[device] = info.device

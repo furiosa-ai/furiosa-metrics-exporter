@@ -65,7 +65,7 @@ func (t *temperatureCollector) Collect(devicePodMap map[string][]kubernetes.PodI
 		}
 
 		if podInfos, ok := devicePodMap[info.uuid]; ok {
-			if !(len(podInfos) == 1 && len(podInfos[0].AllocatedPE) == 8) {
+			if !(len(podInfos) == 1 && len(podInfos[0].AllocatedPE) == 8) { // Partitioned device allocation case. Add original card metric.
 				metric[arch] = info.arch
 				metric[device] = info.device
 				metric[uuid] = info.uuid
@@ -91,7 +91,7 @@ func (t *temperatureCollector) Collect(devicePodMap map[string][]kubernetes.PodI
 
 				metricContainer = append(metricContainer, metric)
 			}
-		} else {
+		} else { // Non-allocated device case
 			metric[arch] = info.arch
 			metric[device] = info.device
 			metric[uuid] = info.uuid

@@ -63,7 +63,7 @@ func (e *Exporter) Start(ctx context.Context) {
 				devicePodMap, err := kubernetes.GetDeviceMap()
 
 				if err != nil {
-					e.logger.Err(err).Msg(fmt.Sprintf("failed to get kubernetes pod information: %v", err))
+					e.logger.Warn().Msg("failed to get kubernetes pod information")
 				}
 
 				for _, err := range e.pipeline.Collect(devicePodMap) {
