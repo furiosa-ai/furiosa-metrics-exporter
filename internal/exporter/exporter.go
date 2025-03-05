@@ -71,8 +71,7 @@ func (e *Exporter) Start(ctx context.Context) {
 				podList, err := kubernetes.ListPods(c)
 
 				if err != nil {
-					e.logger.Err(err)
-					return
+					e.logger.Err(err).Msg(fmt.Sprintf("failed to get pod list: %v", err))
 				}
 
 				devicePodMap := kubernetes.GenerateDeviceMap(podList)
