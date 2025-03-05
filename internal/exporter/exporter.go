@@ -56,25 +56,15 @@ func (e *Exporter) Start(ctx context.Context) {
 			}
 		}()
 
-		c, cleanup, err := kubernetes.ConnectToServer()
-
-		if err != nil {
-			e.logger.Err(err)
-			return
-		}
-		defer cleanup()
-
 		for {
 			select {
 			case <-tick.C:
 
-				podList, err := kubernetes.ListPods(c)
+				devicePodMap, err := kubernetes.GetDeviceMap()
 
 				if err != nil {
-					e.logger.Err(err).Msg(fmt.Sprintf("failed to get pod list: %v", err))
+					e.logger.Err(err).Msg(fmt.Sprintf("failed to get kubernetes pod information: %v", err))
 				}
-
-				devicePodMap := kubernetes.GenerateDeviceMap(podList)
 
 				for _, err := range e.pipeline.Collect(devicePodMap) {
 					e.logger.Err(err).Msg(fmt.Sprintf("error %v received from pipeline collector", err))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -28,39 +29,30 @@ type PodInfo struct {
 	CoreLabel   string
 }
 
-func ConnectToServer() (*grpc.ClientConn, func(), error) {
-	resolver.SetDefaultScheme("passthrough")
-
-	conn, err := grpc.NewClient(k8sSocket,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			d := net.Dialer{}
-			return d.DialContext(ctx, "unix", addr)
-		}))
-
-	if err != nil {
-		return nil, func() {}, fmt.Errorf("failed to connect to '%s'; err: %w", k8sSocket, err)
-	}
-
-	return conn, func() { conn.Close() }, nil
+func GetDeviceMap() (map[string][]PodInfo, error) {
+	return generateDeviceMap()
 }
 
-func ListPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse, error) {
-	client := podResourcesAPI.NewPodResourcesListerClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := client.List(ctx, &podResourcesAPI.ListPodResourcesRequest{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod resources; err: %w", err)
-	}
-
-	return resp, nil
-}
-
-func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map[string][]PodInfo {
+func generateDeviceMap() (map[string][]PodInfo, error) {
 	deviceMap := make(map[string][]PodInfo)
+
+	_, err := os.Stat(k8sSocket)
+	if os.IsNotExist(err) {
+		return nil, fmt.Errorf("kubelet socket '%s' does not exist", k8sSocket)
+	}
+
+	c, cleanup, err := connectToServer()
+
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+
+	devicePods, err := listPods(c)
+
+	if err != nil {
+		return nil, err
+	}
 
 	for _, pod := range devicePods.GetPodResources() {
 		for _, container := range pod.GetContainers() {
@@ -79,7 +71,7 @@ func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map
 						Name:        podName,
 						Namespace:   podNamespace,
 						AllocatedPE: getAllocatedPE(deviceID),
-						CoreLabel:   GetCoreLabel(deviceID),
+						CoreLabel:   getCoreLabel(deviceID),
 					}
 
 					uuid := strings.Split(deviceID, furiosaPartitionedResourcePattern)[0]
@@ -88,8 +80,39 @@ func GenerateDeviceMap(devicePods *podResourcesAPI.ListPodResourcesResponse) map
 			}
 		}
 	}
-	return deviceMap
 
+	return deviceMap, nil
+}
+
+func connectToServer() (*grpc.ClientConn, func(), error) {
+	resolver.SetDefaultScheme("passthrough")
+
+	conn, err := grpc.NewClient(k8sSocket,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := net.Dialer{}
+			return d.DialContext(ctx, "unix", addr)
+		}))
+
+	if err != nil {
+		return nil, func() {}, fmt.Errorf("failed to connect to '%s'; err: %w", k8sSocket, err)
+	}
+
+	return conn, func() { conn.Close() }, nil
+}
+
+func listPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse, error) {
+	client := podResourcesAPI.NewPodResourcesListerClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.List(ctx, &podResourcesAPI.ListPodResourcesRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pod resources; err: %w", err)
+	}
+
+	return resp, nil
 }
 
 func getAllocatedPE(deviceID string) []int {
@@ -113,14 +136,10 @@ func getAllocatedPE(deviceID string) []int {
 	}
 }
 
-func GetCoreLabel(deviceID string) string {
+func getCoreLabel(deviceID string) string {
 	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
 		return "0-7" // TODO(jongchan): warboy case?
 	} else {
 		return strings.Split(deviceID, furiosaPartitionedResourcePattern)[1]
 	}
-}
-
-func IsPartionedDevice(deviceID string) bool {
-	return strings.Contains(deviceID, furiosaPartitionedResourcePattern)
 }
