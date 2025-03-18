@@ -18,6 +18,7 @@ func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
 			collector.NewPowerCollector(devices, nodeName),
 			collector.NewLivenessCollector(devices, nodeName),
 			collector.NewCoreUtilizationCollector(devices, nodeName),
+			collector.NewPerformanceCounterCollector(devices, nodeName),
 			//collector.NewMemoryCollector(devices, nodeName),
 		},
 	}
