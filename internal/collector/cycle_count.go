@@ -54,6 +54,23 @@ func (t *cycleCountCollector) Collect() error {
 			continue
 		}
 
+		metric_map := make(map[uint32]Metric)
+
+		cores := info.cores
+		for _, core_index := range cores {
+			metric := Metric{
+				arch:               info.arch,
+				core:               fmt.Sprintf("%d", core_index),
+				device:             info.device,
+				kubernetesNodeName: t.nodeName,
+				uuid:               info.uuid,
+				cycleCount:         uint64(0),
+			}
+
+			metric_map[core_index] = metric
+			metricContainer = append(metricContainer, metric)
+		}
+
 		values, err := d.DevicePerformanceCounter()
 		if err != nil {
 			errs = append(errs, err)
@@ -62,15 +79,7 @@ func (t *cycleCountCollector) Collect() error {
 
 		counters := values.PerformanceCounter()
 		for _, counter := range counters {
-			metric := Metric{
-				arch:               info.arch,
-				core:               fmt.Sprintf("%d", counter.Core()),
-				device:             info.device,
-				kubernetesNodeName: t.nodeName,
-				uuid:               info.uuid,
-				cycleCount:         counter.CycleCount(),
-			}
-			metricContainer = append(metricContainer, metric)
+			metric_map[counter.Core()][cycleCount] = counter.CycleCount()
 		}
 	}
 
