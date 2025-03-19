@@ -10,29 +10,28 @@ import (
 )
 
 const (
-	taskExecutionCycle = "take_execution_cycle"
-	cycleCount         = "cycle_count"
+	taskExecutionCycle = "task_execution_cycle"
 )
 
-type performanceCounterCollector struct {
+type taskExecutionCycleCollector struct {
 	devices  []smi.Device
 	gaugeVec *prometheus.GaugeVec
 	nodeName string
 }
 
-var _ Collector = (*performanceCounterCollector)(nil)
+var _ Collector = (*taskExecutionCycleCollector)(nil)
 
-func NewPerformanceCounterCollector(devices []smi.Device, nodeName string) Collector {
-	return &performanceCounterCollector{
+func NewTaskExecutionCycleCollector(devices []smi.Device, nodeName string) Collector {
+	return &taskExecutionCycleCollector{
 		devices:  devices,
 		nodeName: nodeName,
 	}
 }
 
-func (t *performanceCounterCollector) Register() {
+func (t *taskExecutionCycleCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "furiosa_npu_performance_counter",
-		Help: "The current performance counter of NPU device",
+		Name: "furiosa_npu_test_execution_cycle",
+		Help: "The current task execution cycle of NPU device",
 	},
 		[]string{
 			arch,
@@ -42,9 +41,11 @@ func (t *performanceCounterCollector) Register() {
 			label,
 			uuid,
 		})
+	
+	
 }
 
-func (t *performanceCounterCollector) Collect() error {
+func (t *taskExecutionCycleCollector) Collect() error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -70,7 +71,6 @@ func (t *performanceCounterCollector) Collect() error {
 				kubernetesNodeName: t.nodeName,
 				uuid:               info.uuid,
 				taskExecutionCycle: counter.TaskExecutionCycle(),
-				cycleCount:         counter.CycleCount(),
 			}
 			metricContainer = append(metricContainer, metric)
 		}
@@ -87,7 +87,7 @@ func (t *performanceCounterCollector) Collect() error {
 	return nil
 }
 
-func (t *performanceCounterCollector) postProcess(metrics MetricContainer) error {
+func (t *taskExecutionCycleCollector) postProcess(metrics MetricContainer) error {
 	t.gaugeVec.Reset()
 
 	for _, metric := range metrics {
@@ -98,16 +98,6 @@ func (t *performanceCounterCollector) postProcess(metrics MetricContainer) error
 				device:             metric[device].(string),
 				kubernetesNodeName: metric[kubernetesNodeName].(string),
 				label:              taskExecutionCycle,
-				uuid:               metric[uuid].(string),
-			}).Set(float64(value.(uint64)))
-		}
-		if value, ok := metric[cycleCount]; ok {
-			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              cycleCount,
 				uuid:               metric[uuid].(string),
 			}).Set(float64(value.(uint64)))
 		}
