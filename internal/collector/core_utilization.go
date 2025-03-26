@@ -2,12 +2,10 @@ package collector
 
 import (
 	"errors"
-	"fmt"
-
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"strconv"
 )
 
 const (
@@ -38,13 +36,15 @@ func (t *coreUtilizationCollector) Register() {
 			arch,
 			device,
 			core,
-			kubernetesNodeName,
 			uuid,
-			pod,
+			kubernetesNode,
+			kubernetesNamespace,
+			kubernetesPod,
+			kubernetesContainer,
 		})
 }
 
-func (t *coreUtilizationCollector) Collect(devicePodMap map[string][]kubernetes.PodInfo) error {
+func (t *coreUtilizationCollector) Collect() error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -63,28 +63,12 @@ func (t *coreUtilizationCollector) Collect(devicePodMap map[string][]kubernetes.
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
-
-			podName := ""
-
-			if podInfos, ok := devicePodMap[info.uuid]; ok {
-				for _, podInfo := range podInfos {
-					for _, core := range podInfo.AllocatedPE {
-						if core == int(pe.Core()) {
-							podName = podInfo.Name
-							break
-						}
-					}
-				}
-			}
-
 			metric := Metric{
-				arch:               info.arch,
-				core:               fmt.Sprintf("%d", pe.Core()),
-				device:             info.device,
-				kubernetesNodeName: t.nodeName,
-				uuid:               info.uuid,
-				peUtilization:      pe.PeUsagePercentage(),
-				pod:                podName,
+				arch:          info.arch,
+				core:          strconv.Itoa(int(pe.Core())),
+				device:        info.device,
+				uuid:          info.uuid,
+				peUtilization: pe.PeUsagePercentage(),
 			}
 			metricContainer = append(metricContainer, metric)
 		}
@@ -102,17 +86,20 @@ func (t *coreUtilizationCollector) Collect(devicePodMap map[string][]kubernetes.
 }
 
 func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
+	transformed := TransformDeviceMetrics(metrics, true)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[peUtilization]; ok {
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				uuid:               metric[uuid].(string),
-				pod:                metric[pod].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				kubernetesNode:      t.nodeName,
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(value.(float64))
 		}
 	}

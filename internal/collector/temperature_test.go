@@ -15,14 +15,16 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 
 	tc := MetricContainer{
 		{
-			arch:               "rngd",
-			core:               "0-7",
-			device:             "npu0",
-			uuid:               uuid,
-			kubernetesNodeName: "node",
-			ambient:            float64(35),
-			peak:               float64(39),
-			pod:                "test",
+			arch:                "rngd",
+			core:                "0-7",
+			device:              "npu0",
+			uuid:                uuid,
+			ambient:             float64(35),
+			peak:                float64(39),
+			kubernetesNode:      "node",
+			kubernetesNamespace: "namespace",
+			kubernetesPod:       "pod",
+			kubernetesContainer: "container",
 		},
 	}
 	err := c.postProcess(tc)
@@ -31,8 +33,8 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 	expected := `
 # HELP furiosa_npu_hw_temperature The current temperature of NPU device
 # TYPE furiosa_npu_hw_temperature gauge
-furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="peak",pod="test",uuid="uuid"} 39
-furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="ambient",pod="test",uuid="uuid"} 35
+furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",label="peak",uuid="uuid"} 39
+furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",label="ambient",uuid="uuid"} 35
 `
 	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
 	assert.NoError(t, err)

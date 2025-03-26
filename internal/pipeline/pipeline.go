@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 )
 
@@ -31,7 +30,7 @@ func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
 	return &p
 }
 
-func (p *Pipeline) Collect(devicePodMap map[string][]kubernetes.PodInfo) []error {
+func (p *Pipeline) Collect() []error {
 	errors := make([]error, len(p.collectors))
 
 	wg := new(sync.WaitGroup)
@@ -40,7 +39,7 @@ func (p *Pipeline) Collect(devicePodMap map[string][]kubernetes.PodInfo) []error
 		go func() {
 			defer wg.Done()
 
-			if err := p.collectors[i].Collect(devicePodMap); err != nil {
+			if err := p.collectors[i].Collect(); err != nil {
 				errors[i] = err
 			}
 		}()

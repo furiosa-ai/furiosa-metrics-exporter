@@ -3,11 +3,11 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"net/http"
 	"time"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/kubernetes"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -60,13 +60,8 @@ func (e *Exporter) Start(ctx context.Context) {
 			select {
 			case <-tick.C:
 
-				devicePodMap, err := kubernetes.GetDeviceMap()
-
-				if err != nil {
-					e.logger.Warn().Msg("failed to get kubernetes pod information")
-				}
-
-				for _, err := range e.pipeline.Collect(devicePodMap) {
+				collector.SyncPodInfoCache()
+				for _, err := range e.pipeline.Collect() {
 					e.logger.Err(err).Msg(fmt.Sprintf("error %v received from pipeline collector", err))
 				}
 
