@@ -64,15 +64,12 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
-			labelMap := make(map[string]interface{})
-
-			labelMap[arch] = info.arch
-			labelMap[core] = strconv.Itoa(int(pe.Core()))
-			labelMap[device] = info.device
-			labelMap[uuid] = info.uuid
-			labelMap[peUtilization] = pe.PeUsagePercentage()
-
-			metric := newMetric(labelMap)
+			metric := newMetric()
+			metric[arch] = info.arch
+			metric[core] = strconv.Itoa(int(pe.Core()))
+			metric[device] = info.device
+			metric[uuid] = info.uuid
+			metric[peUtilization] = pe.PeUsagePercentage()
 
 			metricContainer = append(metricContainer, metric)
 		}

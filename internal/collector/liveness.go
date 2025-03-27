@@ -61,15 +61,12 @@ func (t *livenessCollector) Collect() error {
 			continue
 		}
 
-		labelMap := make(map[string]interface{})
-
-		labelMap[arch] = info.arch
-		labelMap[core] = info.coreLabel
-		labelMap[device] = info.device
-		labelMap[uuid] = info.uuid
-		labelMap[liveness] = value
-
-		metric := newMetric(labelMap)
+		metric := newMetric()
+		metric[arch] = info.arch
+		metric[core] = info.coreLabel
+		metric[device] = info.device
+		metric[uuid] = info.uuid
+		metric[liveness] = value
 
 		metricContainer = append(metricContainer, metric)
 

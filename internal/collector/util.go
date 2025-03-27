@@ -57,7 +57,7 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	}, nil
 }
 
-func defaultMetric() Metric {
+func newMetric() Metric {
 	return Metric{
 		arch:                "",
 		device:              "",
@@ -68,14 +68,4 @@ func defaultMetric() Metric {
 		kubernetesPod:       "",
 		kubernetesContainer: "",
 	}
-}
-
-func newMetric(metrics map[string]interface{}) Metric {
-	metric := defaultMetric()
-
-	for key, value := range metrics {
-		metric[key] = value
-	}
-
-	return metric
 }

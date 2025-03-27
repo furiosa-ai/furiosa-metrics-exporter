@@ -64,15 +64,12 @@ func (t *coreFrequencyCollector) Collect() error {
 
 		frequency := coreFrequency.PeFrequency()
 		for _, pe := range frequency {
-			labelMap := make(map[string]interface{})
-
-			labelMap[arch] = info.arch
-			labelMap[core] = strconv.Itoa(int(pe.Core()))
-			labelMap[device] = info.device
-			labelMap[uuid] = info.uuid
-			labelMap[peFrequency] = pe.Frequency()
-
-			metric := newMetric(labelMap)
+			metric := newMetric()
+			metric[arch] = info.arch
+			metric[core] = strconv.Itoa(int(pe.Core()))
+			metric[device] = info.device
+			metric[uuid] = info.uuid
+			metric[peFrequency] = pe.Frequency()
 
 			metricContainer = append(metricContainer, metric)
 		}

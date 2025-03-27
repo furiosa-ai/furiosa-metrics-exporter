@@ -63,16 +63,13 @@ func (t *temperatureCollector) Collect() error {
 			continue
 		}
 
-		labelMap := make(map[string]interface{})
-
-		labelMap[arch] = info.arch
-		labelMap[core] = info.coreLabel
-		labelMap[device] = info.device
-		labelMap[uuid] = info.uuid
-		labelMap[ambient] = deviceTemperature.Ambient()
-		labelMap[peak] = deviceTemperature.SocPeak()
-
-		metric := newMetric(labelMap)
+		metric := newMetric()
+		metric[arch] = info.arch
+		metric[core] = info.coreLabel
+		metric[device] = info.device
+		metric[uuid] = info.uuid
+		metric[ambient] = deviceTemperature.Ambient()
+		metric[peak] = deviceTemperature.SocPeak()
 
 		metricContainer = append(metricContainer, metric)
 	}
