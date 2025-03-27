@@ -3,6 +3,7 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"net/http"
 	"time"
 
@@ -58,6 +59,8 @@ func (e *Exporter) Start(ctx context.Context) {
 		for {
 			select {
 			case <-tick.C:
+
+				collector.SyncPodInfoCache()
 				for _, err := range e.pipeline.Collect() {
 					e.logger.Err(err).Msg(fmt.Sprintf("error %v received from pipeline collector", err))
 				}

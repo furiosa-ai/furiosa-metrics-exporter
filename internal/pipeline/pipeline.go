@@ -52,6 +52,5 @@ func (p *Pipeline) Collect() []error {
 			results = append(results, errors[i])
 		}
 	}
-
 	return results
 }

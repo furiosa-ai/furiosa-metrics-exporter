@@ -37,8 +37,11 @@ func (t *powerCollector) Register() {
 			device,
 			label,
 			core,
-			kubernetesNodeName,
 			uuid,
+			kubernetesNode,
+			kubernetesNamespace,
+			kubernetesPod,
+			kubernetesContainer,
 		})
 }
 
@@ -47,19 +50,11 @@ func (t *powerCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric := Metric{}
-
 		info, err := getDeviceInfo(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		metric[arch] = info.arch
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = t.nodeName
 
 		power, err := d.PowerConsumption()
 		if err != nil {
@@ -67,7 +62,13 @@ func (t *powerCollector) Collect() error {
 			continue
 		}
 
+		metric := newMetric()
+		metric[arch] = info.arch
+		metric[core] = info.coreLabel
+		metric[device] = info.device
+		metric[uuid] = info.uuid
 		metric[rms] = power
+
 		metricContainer = append(metricContainer, metric)
 	}
 
@@ -83,18 +84,21 @@ func (t *powerCollector) Collect() error {
 }
 
 func (t *powerCollector) postProcess(metrics MetricContainer) error {
+	transformed := TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric["rms"]; ok {
-
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              rms,
-				uuid:               metric[uuid].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				label:               rms,
+				uuid:                metric[uuid].(string),
+				kubernetesNode:      t.nodeName,
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(value.(float64))
 		}
 	}

@@ -2,7 +2,7 @@ package collector
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,8 +37,11 @@ func (t *coreFrequencyCollector) Register() {
 			arch,
 			device,
 			core,
-			kubernetesNodeName,
 			uuid,
+			kubernetesNode,
+			kubernetesNamespace,
+			kubernetesPod,
+			kubernetesContainer,
 		})
 }
 
@@ -61,14 +64,13 @@ func (t *coreFrequencyCollector) Collect() error {
 
 		frequency := coreFrequency.PeFrequency()
 		for _, pe := range frequency {
-			metric := Metric{
-				arch:               info.arch,
-				core:               fmt.Sprintf("%d", pe.Core()),
-				device:             info.device,
-				kubernetesNodeName: t.nodeName,
-				uuid:               info.uuid,
-				peFrequency:        pe.Frequency(),
-			}
+			metric := newMetric()
+			metric[arch] = info.arch
+			metric[core] = strconv.Itoa(int(pe.Core()))
+			metric[device] = info.device
+			metric[uuid] = info.uuid
+			metric[peFrequency] = pe.Frequency()
+
 			metricContainer = append(metricContainer, metric)
 		}
 	}
@@ -85,17 +87,21 @@ func (t *coreFrequencyCollector) Collect() error {
 }
 
 func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
+	transformed := TransformDeviceMetrics(metrics, true)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[peFrequency]; ok {
 
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				uuid:               metric[uuid].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				kubernetesNode:      t.nodeName,
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(float64(value.(uint32)))
 		}
 	}

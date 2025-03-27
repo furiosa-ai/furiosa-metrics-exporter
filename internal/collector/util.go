@@ -56,3 +56,16 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 		coreLabel: core,
 	}, nil
 }
+
+func newMetric() Metric {
+	return Metric{
+		arch:                "",
+		device:              "",
+		core:                "",
+		uuid:                "",
+		kubernetesNode:      "",
+		kubernetesNamespace: "",
+		kubernetesPod:       "",
+		kubernetesContainer: "",
+	}
+}

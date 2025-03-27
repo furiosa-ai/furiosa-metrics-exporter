@@ -36,8 +36,11 @@ func (t *livenessCollector) Register() {
 			arch,
 			core,
 			device,
-			kubernetesNodeName,
 			uuid,
+			kubernetesNode,
+			kubernetesNamespace,
+			kubernetesPod,
+			kubernetesContainer,
 		})
 }
 
@@ -46,19 +49,11 @@ func (t *livenessCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric := Metric{}
-
 		info, err := getDeviceInfo(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		metric[arch] = info.arch
-		metric[core] = info.coreLabel
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[kubernetesNodeName] = t.nodeName
 
 		value, err := d.Liveness()
 		if err != nil {
@@ -66,8 +61,15 @@ func (t *livenessCollector) Collect() error {
 			continue
 		}
 
+		metric := newMetric()
+		metric[arch] = info.arch
+		metric[core] = info.coreLabel
+		metric[device] = info.device
+		metric[uuid] = info.uuid
 		metric[liveness] = value
+
 		metricContainer = append(metricContainer, metric)
+
 	}
 
 	if err := t.postProcess(metricContainer); err != nil {
@@ -82,9 +84,10 @@ func (t *livenessCollector) Collect() error {
 }
 
 func (t *livenessCollector) postProcess(metrics MetricContainer) error {
+	transformed := TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[liveness]; ok {
 			var alive float64
 			if value.(bool) {
@@ -94,12 +97,16 @@ func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 			}
 
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				kubernetesNode:      t.nodeName,
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(alive)
+
 		}
 	}
 

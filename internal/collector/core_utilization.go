@@ -2,7 +2,7 @@ package collector
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,8 +37,11 @@ func (t *coreUtilizationCollector) Register() {
 			arch,
 			device,
 			core,
-			kubernetesNodeName,
 			uuid,
+			kubernetesNode,
+			kubernetesNamespace,
+			kubernetesPod,
+			kubernetesContainer,
 		})
 }
 
@@ -61,14 +64,13 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
-			metric := Metric{
-				arch:               info.arch,
-				core:               fmt.Sprintf("%d", pe.Core()),
-				device:             info.device,
-				kubernetesNodeName: t.nodeName,
-				uuid:               info.uuid,
-				peUtilization:      pe.PeUsagePercentage(),
-			}
+			metric := newMetric()
+			metric[arch] = info.arch
+			metric[core] = strconv.Itoa(int(pe.Core()))
+			metric[device] = info.device
+			metric[uuid] = info.uuid
+			metric[peUtilization] = pe.PeUsagePercentage()
+
 			metricContainer = append(metricContainer, metric)
 		}
 	}
@@ -85,16 +87,20 @@ func (t *coreUtilizationCollector) Collect() error {
 }
 
 func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
+	transformed := TransformDeviceMetrics(metrics, true)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[peUtilization]; ok {
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				uuid:               metric[uuid].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				kubernetesNode:      t.nodeName,
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(value.(float64))
 		}
 	}

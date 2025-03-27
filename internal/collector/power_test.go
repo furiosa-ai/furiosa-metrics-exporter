@@ -15,23 +15,26 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 
 	tc := MetricContainer{
 		{
-			arch:               "rngd",
-			core:               "0-7",
-			device:             "npu0",
-			kubernetesNodeName: "node",
-			rms:                float64(4795000),
-			uuid:               "uuid",
+			arch:                "rngd",
+			core:                "0-7",
+			device:              "npu0",
+			rms:                 float64(4795000),
+			uuid:                "uuid",
+			kubernetesNode:      "node",
+			kubernetesNamespace: "namespace",
+			kubernetesPod:       "pod",
+			kubernetesContainer: "container",
 		},
 	}
-
 	err := p.postProcess(tc)
 	assert.NoError(t, err)
 
 	expected := `
 # HELP furiosa_npu_hw_power The current power of NPU device
 # TYPE furiosa_npu_hw_power gauge
-furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",label="rms",uuid="uuid"} 4795000
+furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",label="rms",uuid="uuid"} 4795000
 `
+
 	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
 	assert.NoError(t, err)
 }
