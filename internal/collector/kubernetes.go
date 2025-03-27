@@ -177,14 +177,14 @@ func buildMultiWiseCache() (deviceWiseCache, coreWiseCache, error) {
 
 				for _, deviceID := range containerDevice.GetDeviceIds() {
 					deviceUUID := strings.Split(deviceID, furiosaPartitionedResourcePattern)[0]
-					allocatedPE := getAllocatedPE(deviceUUID)
+					allocatedPE := getAllocatedPEfromDeviceID(deviceID)
 
 					podInformation := podInfo{
 						Name:          podResource.GetName(),
 						Namespace:     podResource.GetNamespace(),
 						ContainerName: containerResource.GetName(),
 						AllocatedPE:   allocatedPE,
-						CoreLabel:     getCoreLabel(deviceID),
+						CoreLabel:     getCoreLabelfromDeviceID(deviceID),
 					}
 
 					// build device wise cache
@@ -237,7 +237,7 @@ func listPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse,
 	return resp, nil
 }
 
-func getAllocatedPE(deviceID string) []int {
+func getAllocatedPEfromDeviceID(deviceID string) []int {
 	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
 		return []int{0, 1, 2, 3, 4, 5, 6, 7} // TODO(jongchan): warboy case?
 	} else {
@@ -258,7 +258,7 @@ func getAllocatedPE(deviceID string) []int {
 	}
 }
 
-func getCoreLabel(deviceID string) string {
+func getCoreLabelfromDeviceID(deviceID string) string {
 	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
 		return "0-7" // TODO(jongchan): warboy case?
 	} else {
