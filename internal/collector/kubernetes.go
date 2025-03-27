@@ -135,6 +135,7 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 					duplicated[kubernetesContainer] = podInformation.ContainerName
 					duplicated[core] = podInformation.CoreLabel
 
+					transformed = append(transformed, metric)
 					transformed = append(transformed, duplicated)
 				}
 			}
