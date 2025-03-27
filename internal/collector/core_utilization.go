@@ -2,10 +2,11 @@ package collector
 
 import (
 	"errors"
+	"strconv"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"strconv"
 )
 
 const (
@@ -63,13 +64,16 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
-			metric := Metric{
-				arch:          info.arch,
-				core:          strconv.Itoa(int(pe.Core())),
-				device:        info.device,
-				uuid:          info.uuid,
-				peUtilization: pe.PeUsagePercentage(),
-			}
+			labelMap := make(map[string]interface{})
+
+			labelMap[arch] = info.arch
+			labelMap[core] = strconv.Itoa(int(pe.Core()))
+			labelMap[device] = info.device
+			labelMap[uuid] = info.uuid
+			labelMap[peUtilization] = pe.PeUsagePercentage()
+
+			metric := newMetric(labelMap)
+
 			metricContainer = append(metricContainer, metric)
 		}
 	}

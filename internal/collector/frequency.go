@@ -2,7 +2,7 @@ package collector
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
@@ -64,13 +64,16 @@ func (t *coreFrequencyCollector) Collect() error {
 
 		frequency := coreFrequency.PeFrequency()
 		for _, pe := range frequency {
-			metric := Metric{
-				arch:        info.arch,
-				core:        fmt.Sprintf("%d", pe.Core()),
-				device:      info.device,
-				uuid:        info.uuid,
-				peFrequency: pe.Frequency(),
-			}
+			labelMap := make(map[string]interface{})
+
+			labelMap[arch] = info.arch
+			labelMap[core] = strconv.Itoa(int(pe.Core()))
+			labelMap[device] = info.device
+			labelMap[uuid] = info.uuid
+			labelMap[peFrequency] = pe.Frequency()
+
+			metric := newMetric(labelMap)
+
 			metricContainer = append(metricContainer, metric)
 		}
 	}

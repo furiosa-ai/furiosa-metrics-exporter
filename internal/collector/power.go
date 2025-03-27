@@ -50,8 +50,6 @@ func (t *powerCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric := Metric{}
-
 		info, err := getDeviceInfo(d)
 		if err != nil {
 			errs = append(errs, err)
@@ -64,11 +62,15 @@ func (t *powerCollector) Collect() error {
 			continue
 		}
 
-		metric[arch] = info.arch
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[core] = info.coreLabel
-		metric[rms] = power
+		labelMap := make(map[string]interface{})
+
+		labelMap[arch] = info.arch
+		labelMap[core] = info.coreLabel
+		labelMap[device] = info.device
+		labelMap[uuid] = info.uuid
+		labelMap[rms] = power
+
+		metric := newMetric(labelMap)
 
 		metricContainer = append(metricContainer, metric)
 	}
