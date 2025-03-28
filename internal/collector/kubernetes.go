@@ -124,7 +124,8 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 				copied[core] = podInfoSlice[0].CoreLabel
 				transformed = append(transformed, copied)
 			} else {
-				// partitioned allocation case, duplicate the metric for each pod
+				// partitioned allocation case, preserve origin metric and duplicate the metric for each pod
+				transformed = append(transformed, metric)
 				for _, podInformation := range podInfoSlice {
 					duplicated := Metric{}
 					for k, v := range metric {
@@ -135,7 +136,6 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 					duplicated[kubernetesContainer] = podInformation.ContainerName
 					duplicated[core] = podInformation.CoreLabel
 
-					transformed = append(transformed, metric)
 					transformed = append(transformed, duplicated)
 				}
 			}
