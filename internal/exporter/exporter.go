@@ -22,7 +22,7 @@ type Exporter struct {
 	pipeline        *pipeline.Pipeline
 }
 
-func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
+func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi.Device, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
 	exporter := Exporter{
 		logger:          logger,
 		collectInterval: cfg.Interval,
@@ -37,7 +37,7 @@ func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi
 			}(),
 		},
 		errChan:  errChan,
-		pipeline: pipeline.NewRegisteredPipeline(devices, cfg.NodeName),
+		pipeline: pipeline.NewRegisteredPipeline(devices, metricFactory),
 	}
 
 	return &exporter, nil

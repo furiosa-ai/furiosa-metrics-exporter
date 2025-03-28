@@ -2,10 +2,47 @@ package collector
 
 import (
 	"fmt"
-	"slices"
-
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"slices"
 )
+
+type MetricFactory interface {
+	NewDeviceWiseMetric(d smi.Device) (Metric, error)
+}
+
+var _ MetricFactory = (*metricFactory)(nil)
+
+func NewMetricFactory(nodeName, driverVersion string) MetricFactory {
+	return &metricFactory{
+		nodeName:      nodeName,
+		driverVersion: driverVersion,
+	}
+}
+
+type metricFactory struct {
+	nodeName      string
+	driverVersion string
+}
+
+func (m *metricFactory) NewDeviceWiseMetric(d smi.Device) (Metric, error) {
+	metric := newMetric()
+	info, err := getDeviceInfo(d)
+	if err != nil {
+		return nil, err
+	}
+
+	metric[arch] = info.arch
+	metric[core] = info.coreLabel
+	metric[device] = info.device
+	metric[uuid] = info.uuid
+	metric[bdf] = info.bdf
+	metric[firmwareVersion] = info.firmwareVersion
+	metric[pertVersion] = info.pertVersion
+	metric[driverVersion] = m.driverVersion
+	metric[kubernetesNode] = m.nodeName
+
+	return metric, nil
+}
 
 type deviceInfo struct {
 	arch            string
@@ -16,16 +53,10 @@ type deviceInfo struct {
 	bdf             string
 	firmwareVersion string
 	pertVersion     string
-	driverVersion   string
 }
 
 func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	info, err := device.DeviceInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	driverInfo, err := smi.DriverInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +97,6 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 		bdf:             info.BDF(),
 		firmwareVersion: info.FirmwareVersion().String(),
 		pertVersion:     info.PertVersion().String(),
-		driverVersion:   driverInfo.String(),
 	}, nil
 }
 
@@ -98,28 +128,11 @@ func newMetric() Metric {
 	return metric
 }
 
-func newDeviceWiseMetric(d smi.Device) (Metric, error) {
-	metric := newMetric()
-	info, err := getDeviceInfo(d)
-	if err != nil {
-		return nil, err
-	}
-
-	metric[arch] = info.arch
-	metric[core] = info.coreLabel
-	metric[device] = info.device
-	metric[uuid] = info.uuid
-	metric[bdf] = info.bdf
-	metric[firmwareVersion] = info.firmwareVersion
-	metric[pertVersion] = info.pertVersion
-	metric[driverVersion] = info.driverVersion
-
-	return metric, nil
-}
-
 func deepCopyMetric(origin Metric) Metric {
 	dst := make(Metric, len(origin))
 	for k, v := range origin {
+		// NOTE(@bg): At the moment, we don't use slices or maps for the metric value
+		// So, it is safe to do a shallow copy. If we start using slices or maps, we need to do a recursive deep copy.
 		dst[k] = v
 	}
 	return dst

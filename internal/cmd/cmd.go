@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"os"
 	"os/signal"
 	"syscall"
@@ -87,9 +88,17 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
+	driverInfo, err := smi.DriverInfo()
+	if err != nil {
+		return err
+	}
+
+	// Prepare Metric Factory
+	metricFactory := collector.NewMetricFactory(cfg.NodeName, driverInfo.String())
+
 	// Create Exporter
 	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(logger, cfg, devices, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(logger, cfg, devices, metricFactory, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err

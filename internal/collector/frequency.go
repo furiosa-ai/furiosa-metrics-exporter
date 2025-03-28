@@ -14,17 +14,17 @@ const (
 )
 
 type coreFrequencyCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	metricFactory MetricFactory
+	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*coreFrequencyCollector)(nil)
 
-func NewCoreFrequencyCollector(devices []smi.Device, nodeName string) Collector {
+func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
 	return &coreFrequencyCollector{
-		devices:  devices,
-		nodeName: nodeName,
+		devices:       devices,
+		metricFactory: metricFactory,
 	}
 }
 
@@ -40,7 +40,7 @@ func (t *coreFrequencyCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric, err := newDeviceWiseMetric(d)
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -87,7 +87,7 @@ func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),
-				kubernetesNode:      t.nodeName,
+				kubernetesNode:      metric[kubernetesNode].(string),
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),
 				kubernetesContainer: metric[kubernetesContainer].(string),
