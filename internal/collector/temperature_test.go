@@ -13,28 +13,23 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 	c := &temperatureCollector{}
 	c.Register()
 
-	tc := MetricContainer{
-		{
-			arch:                "rngd",
-			core:                "0-7",
-			device:              "npu0",
-			uuid:                uuid,
-			ambient:             float64(35),
-			peak:                float64(39),
-			kubernetesNode:      "node",
-			kubernetesNamespace: "namespace",
-			kubernetesPod:       "pod",
-			kubernetesContainer: "container",
-		},
-	}
+	tc := MetricContainer{}
+	metric := newMetric()
+	metric[arch] = "rngd"
+	metric[core] = "0-7"
+	metric[device] = "npu0"
+	metric[uuid] = uuid
+	metric[ambient] = float64(35)
+	metric[peak] = float64(39)
+	tc = append(tc, metric)
 	err := c.postProcess(tc)
 	assert.NoError(t, err)
 
 	expected := `
 # HELP furiosa_npu_hw_temperature The current temperature of NPU device
 # TYPE furiosa_npu_hw_temperature gauge
-furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",label="peak",uuid="uuid"} 39
-furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",label="ambient",uuid="uuid"} 35
+furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",label="peak",pci_bus_id="",pert_version="",uuid="uuid"} 39
+furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",label="ambient",pci_bus_id="",pert_version="",uuid="uuid"} 35
 `
 	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
 	assert.NoError(t, err)

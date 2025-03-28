@@ -79,12 +79,12 @@ func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
 
 	for _, metric := range transformed {
 		if value, ok := metric[peFrequency]; ok {
-
 			t.gaugeVec.With(prometheus.Labels{
 				arch:                metric[arch].(string),
 				core:                metric[core].(string),
 				device:              metric[device].(string),
 				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),

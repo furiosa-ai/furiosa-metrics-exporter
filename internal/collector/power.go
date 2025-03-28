@@ -32,7 +32,7 @@ func (t *powerCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_power",
 		Help: "The current power of NPU device",
-	}, defaultMetricLabels())
+	}, append(defaultMetricLabels(), label))
 }
 
 func (t *powerCollector) Collect() error {
@@ -79,6 +79,7 @@ func (t *powerCollector) postProcess(metrics MetricContainer) error {
 				device:              metric[device].(string),
 				label:               rms,
 				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),

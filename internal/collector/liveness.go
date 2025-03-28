@@ -85,6 +85,7 @@ func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 				core:                metric[core].(string),
 				device:              metric[device].(string),
 				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),

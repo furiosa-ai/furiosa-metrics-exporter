@@ -33,7 +33,7 @@ func (t *temperatureCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
 		Help: "The current temperature of NPU device",
-	}, defaultMetricLabels())
+	}, append(defaultMetricLabels(), label))
 }
 
 func (t *temperatureCollector) Collect() error {
@@ -81,6 +81,7 @@ func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
 				device:              metric[device].(string),
 				label:               ambient,
 				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),
@@ -98,6 +99,7 @@ func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
 				device:              metric[device].(string),
 				label:               peak,
 				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),
