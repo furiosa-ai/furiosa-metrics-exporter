@@ -9,9 +9,10 @@ import (
 )
 
 type temperatureCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	driverVersion smi.VersionInfo
+	gaugeVec      *prometheus.GaugeVec
+	nodeName      string
 }
 
 const (
@@ -32,18 +33,7 @@ func (t *temperatureCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
 		Help: "The current temperature of NPU device",
-	},
-		[]string{
-			arch,
-			core,
-			device,
-			label,
-			uuid,
-			kubernetesNode,
-			kubernetesNamespace,
-			kubernetesPod,
-			kubernetesContainer,
-		})
+	}, defaultMetricLabels())
 }
 
 func (t *temperatureCollector) Collect() error {
@@ -51,7 +41,7 @@ func (t *temperatureCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		info, err := getDeviceInfo(d)
+		metric, err := newDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -63,14 +53,8 @@ func (t *temperatureCollector) Collect() error {
 			continue
 		}
 
-		metric := newMetric()
-		metric[arch] = info.arch
-		metric[core] = info.coreLabel
-		metric[device] = info.device
-		metric[uuid] = info.uuid
 		metric[ambient] = deviceTemperature.Ambient()
 		metric[peak] = deviceTemperature.SocPeak()
-
 		metricContainer = append(metricContainer, metric)
 	}
 
@@ -97,6 +81,9 @@ func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
 				device:              metric[device].(string),
 				label:               ambient,
 				uuid:                metric[uuid].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
 				kubernetesNode:      t.nodeName,
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),
@@ -111,6 +98,9 @@ func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
 				device:              metric[device].(string),
 				label:               peak,
 				uuid:                metric[uuid].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
 				kubernetesNode:      t.nodeName,
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),

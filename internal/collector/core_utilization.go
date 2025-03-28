@@ -14,9 +14,10 @@ const (
 )
 
 type coreUtilizationCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	driverVersion smi.VersionInfo
+	gaugeVec      *prometheus.GaugeVec
+	nodeName      string
 }
 
 var _ Collector = (*coreUtilizationCollector)(nil)
@@ -32,17 +33,7 @@ func (t *coreUtilizationCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_utilization",
 		Help: "The current core utilization of NPU device",
-	},
-		[]string{
-			arch,
-			device,
-			core,
-			uuid,
-			kubernetesNode,
-			kubernetesNamespace,
-			kubernetesPod,
-			kubernetesContainer,
-		})
+	}, defaultMetricLabels())
 }
 
 func (t *coreUtilizationCollector) Collect() error {
@@ -50,7 +41,7 @@ func (t *coreUtilizationCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		info, err := getDeviceInfo(d)
+		metric, err := newDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -64,14 +55,10 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
-			metric := newMetric()
-			metric[arch] = info.arch
-			metric[core] = strconv.Itoa(int(pe.Core()))
-			metric[device] = info.device
-			metric[uuid] = info.uuid
-			metric[peUtilization] = pe.PeUsagePercentage()
-
-			metricContainer = append(metricContainer, metric)
+			duplicated := deepCopyMetric(metric)
+			duplicated[core] = strconv.Itoa(int(pe.Core()))
+			duplicated[peUtilization] = pe.PeUsagePercentage()
+			metricContainer = append(metricContainer, duplicated)
 		}
 	}
 
@@ -97,6 +84,9 @@ func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
 				core:                metric[core].(string),
 				device:              metric[device].(string),
 				uuid:                metric[uuid].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
 				kubernetesNode:      t.nodeName,
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),

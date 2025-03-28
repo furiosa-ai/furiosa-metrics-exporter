@@ -8,15 +8,24 @@ import (
 )
 
 type deviceInfo struct {
-	arch      string
-	device    string
-	uuid      string
-	cores     []uint32
-	coreLabel string
+	arch            string
+	device          string
+	uuid            string
+	cores           []uint32
+	coreLabel       string
+	bdf             string
+	firmwareVersion string
+	pertVersion     string
+	driverVersion   string
 }
 
 func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	info, err := device.DeviceInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	driverInfo, err := smi.DriverInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -49,23 +58,69 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	}
 
 	return &deviceInfo{
-		arch:      info.Arch().ToString(),
-		device:    info.Name(),
-		uuid:      info.UUID(),
-		cores:     cores,
-		coreLabel: core,
+		arch:            info.Arch().ToString(),
+		device:          info.Name(),
+		uuid:            info.UUID(),
+		cores:           cores,
+		coreLabel:       core,
+		bdf:             info.BDF(),
+		firmwareVersion: info.FirmwareVersion().String(),
+		pertVersion:     info.PertVersion().String(),
+		driverVersion:   driverInfo.String(),
 	}, nil
 }
 
-func newMetric() Metric {
-	return Metric{
-		arch:                "",
-		device:              "",
-		core:                "",
-		uuid:                "",
-		kubernetesNode:      "",
-		kubernetesNamespace: "",
-		kubernetesPod:       "",
-		kubernetesContainer: "",
+func defaultMetricLabels() []string {
+	return []string{
+		arch,
+		core,
+		device,
+		uuid,
+		bdf,
+		firmwareVersion,
+		pertVersion,
+		driverVersion,
+		kubernetesNode,
+		kubernetesNamespace,
+		kubernetesPod,
+		kubernetesContainer,
 	}
+}
+
+func newMetric() Metric {
+	labels := defaultMetricLabels()
+
+	metric := make(Metric, len(labels))
+	for _, l := range labels {
+		metric[l] = ""
+	}
+
+	return metric
+}
+
+func newDeviceWiseMetric(d smi.Device) (Metric, error) {
+	metric := newMetric()
+	info, err := getDeviceInfo(d)
+	if err != nil {
+		return nil, err
+	}
+
+	metric[arch] = info.arch
+	metric[core] = info.coreLabel
+	metric[device] = info.device
+	metric[uuid] = info.uuid
+	metric[bdf] = info.bdf
+	metric[firmwareVersion] = info.firmwareVersion
+	metric[pertVersion] = info.pertVersion
+	metric[driverVersion] = info.driverVersion
+
+	return metric, nil
+}
+
+func deepCopyMetric(origin Metric) Metric {
+	dst := make(Metric, len(origin))
+	for k, v := range origin {
+		dst[k] = v
+	}
+	return dst
 }
