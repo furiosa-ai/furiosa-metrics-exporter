@@ -37,24 +37,24 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 
 	accumulatedCores := map[uint32]uint32{}
 	for _, file := range files {
-		for _, core := range file.Cores() {
-			accumulatedCores[core] = core
+		for _, c := range file.Cores() {
+			accumulatedCores[c] = c
 		}
 	}
 
 	cores := make([]uint32, 0, len(accumulatedCores))
-	for core := range accumulatedCores {
-		cores = append(cores, core)
+	for c := range accumulatedCores {
+		cores = append(cores, c)
 	}
 
 	start := slices.Min(cores)
 	end := slices.Max(cores)
 
-	var core string
+	var coreLabel string
 	if start == end {
-		core = fmt.Sprintf("%d", start)
+		coreLabel = fmt.Sprintf("%d", start)
 	} else {
-		core = fmt.Sprintf("%d-%d", start, end)
+		coreLabel = fmt.Sprintf("%d-%d", start, end)
 	}
 
 	return &deviceInfo{
@@ -62,7 +62,7 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 		device:          info.Name(),
 		uuid:            info.UUID(),
 		cores:           cores,
-		coreLabel:       core,
+		coreLabel:       coreLabel,
 		bdf:             info.BDF(),
 		firmwareVersion: info.FirmwareVersion().String(),
 		pertVersion:     info.PertVersion().String(),
