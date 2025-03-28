@@ -9,10 +9,9 @@ import (
 )
 
 type temperatureCollector struct {
-	devices       []smi.Device
-	driverVersion smi.VersionInfo
-	gaugeVec      *prometheus.GaugeVec
-	nodeName      string
+	devices  []smi.Device
+	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 const (

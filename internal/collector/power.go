@@ -13,10 +13,9 @@ const (
 )
 
 type powerCollector struct {
-	devices       []smi.Device
-	driverVersion smi.VersionInfo
-	gaugeVec      *prometheus.GaugeVec
-	nodeName      string
+	devices  []smi.Device
+	gaugeVec *prometheus.GaugeVec
+	nodeName string
 }
 
 var _ Collector = (*powerCollector)(nil)
