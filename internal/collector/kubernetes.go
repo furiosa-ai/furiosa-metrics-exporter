@@ -95,10 +95,7 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 				continue
 			}
 
-			copied := Metric{}
-			for k, v := range metric {
-				copied[k] = v
-			}
+			copied := deepCopyMetric(metric)
 			copied[kubernetesNamespace] = podInformation.Namespace
 			copied[kubernetesPod] = podInformation.Name
 			copied[kubernetesContainer] = podInformation.ContainerName
@@ -114,10 +111,7 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 
 			if len(podInfoSlice) == 1 && len(podInfoSlice[0].AllocatedPE) == 8 {
 				// exclusive allocation case
-				copied := Metric{}
-				for k, v := range metric {
-					copied[k] = v
-				}
+				copied := deepCopyMetric(metric)
 				copied[kubernetesNamespace] = podInfoSlice[0].Namespace
 				copied[kubernetesPod] = podInfoSlice[0].Name
 				copied[kubernetesContainer] = podInfoSlice[0].ContainerName
@@ -127,10 +121,7 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 				// partitioned allocation case, preserve origin metric and duplicate the metric for each pod
 				transformed = append(transformed, metric)
 				for _, podInformation := range podInfoSlice {
-					duplicated := Metric{}
-					for k, v := range metric {
-						duplicated[k] = v
-					}
+					duplicated := deepCopyMetric(metric)
 					duplicated[kubernetesNamespace] = podInformation.Namespace
 					duplicated[kubernetesPod] = podInformation.Name
 					duplicated[kubernetesContainer] = podInformation.ContainerName

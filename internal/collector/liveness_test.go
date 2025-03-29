@@ -22,40 +22,36 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 	}{
 		{
 			description: "liveness is true",
-			source: MetricContainer{
-				{
-					arch:                "rngd",
-					core:                "0-7",
-					device:              "npu0",
-					uuid:                "uuid",
-					liveness:            true,
-					kubernetesNode:      "node",
-					kubernetesNamespace: "namespace",
-					kubernetesPod:       "pod",
-					kubernetesContainer: "container",
-				},
-			},
+			source: func() MetricContainer {
+				tc := MetricContainer{}
+				metric := newMetric()
+				metric[arch] = "rngd"
+				metric[core] = "0-7"
+				metric[device] = "npu0"
+				metric[uuid] = "uuid"
+				metric[liveness] = true
+				tc = append(tc, metric)
+				return tc
+			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",uuid="uuid"} 1
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="",pert_version="",uuid="uuid"} 1
 `,
 		},
 		{
 			description: "liveness is false",
-			source: MetricContainer{
-				{
-					arch:                "rngd",
-					core:                "0-7",
-					device:              "npu0",
-					uuid:                "uuid",
-					liveness:            false,
-					kubernetesNode:      "node",
-					kubernetesNamespace: "namespace",
-					kubernetesPod:       "pod",
-					kubernetesContainer: "container",
-				},
-			},
+			source: func() MetricContainer {
+				tc := MetricContainer{}
+				metric := newMetric()
+				metric[arch] = "rngd"
+				metric[core] = "0-7"
+				metric[device] = "npu0"
+				metric[uuid] = "uuid"
+				metric[liveness] = false
+				tc = append(tc, metric)
+				return tc
+			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_container_name="container",kubernetes_namespace_name="namespace",kubernetes_node_name="",kubernetes_pod_name="pod",uuid="uuid"} 0
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="",pert_version="",uuid="uuid"} 0
 `,
 		},
 	}

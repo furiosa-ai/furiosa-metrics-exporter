@@ -13,17 +13,17 @@ const (
 )
 
 type livenessCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	metricFactory MetricFactory
+	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*livenessCollector)(nil)
 
-func NewLivenessCollector(devices []smi.Device, nodeName string) Collector {
+func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
 	return &livenessCollector{
-		devices:  devices,
-		nodeName: nodeName,
+		devices:       devices,
+		metricFactory: metricFactory,
 	}
 }
 
@@ -31,17 +31,7 @@ func (t *livenessCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_alive",
 		Help: "The liveness of NPU device",
-	},
-		[]string{
-			arch,
-			core,
-			device,
-			uuid,
-			kubernetesNode,
-			kubernetesNamespace,
-			kubernetesPod,
-			kubernetesContainer,
-		})
+	}, defaultMetricLabels())
 }
 
 func (t *livenessCollector) Collect() error {
@@ -49,7 +39,7 @@ func (t *livenessCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		info, err := getDeviceInfo(d)
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -61,15 +51,8 @@ func (t *livenessCollector) Collect() error {
 			continue
 		}
 
-		metric := newMetric()
-		metric[arch] = info.arch
-		metric[core] = info.coreLabel
-		metric[device] = info.device
-		metric[uuid] = info.uuid
 		metric[liveness] = value
-
 		metricContainer = append(metricContainer, metric)
-
 	}
 
 	if err := t.postProcess(metricContainer); err != nil {
@@ -101,7 +84,11 @@ func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 				core:                metric[core].(string),
 				device:              metric[device].(string),
 				uuid:                metric[uuid].(string),
-				kubernetesNode:      t.nodeName,
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				kubernetesNode:      metric[kubernetesNode].(string),
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),
 				kubernetesContainer: metric[kubernetesContainer].(string),

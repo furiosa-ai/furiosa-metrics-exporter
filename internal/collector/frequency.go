@@ -14,17 +14,17 @@ const (
 )
 
 type coreFrequencyCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	metricFactory MetricFactory
+	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*coreFrequencyCollector)(nil)
 
-func NewCoreFrequencyCollector(devices []smi.Device, nodeName string) Collector {
+func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
 	return &coreFrequencyCollector{
-		devices:  devices,
-		nodeName: nodeName,
+		devices:       devices,
+		metricFactory: metricFactory,
 	}
 }
 
@@ -32,17 +32,7 @@ func (t *coreFrequencyCollector) Register() {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_frequency",
 		Help: "The current core frequency of NPU device (MHz)",
-	},
-		[]string{
-			arch,
-			device,
-			core,
-			uuid,
-			kubernetesNode,
-			kubernetesNamespace,
-			kubernetesPod,
-			kubernetesContainer,
-		})
+	}, defaultMetricLabels())
 }
 
 func (t *coreFrequencyCollector) Collect() error {
@@ -50,7 +40,7 @@ func (t *coreFrequencyCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		info, err := getDeviceInfo(d)
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -64,14 +54,10 @@ func (t *coreFrequencyCollector) Collect() error {
 
 		frequency := coreFrequency.PeFrequency()
 		for _, pe := range frequency {
-			metric := newMetric()
-			metric[arch] = info.arch
-			metric[core] = strconv.Itoa(int(pe.Core()))
-			metric[device] = info.device
-			metric[uuid] = info.uuid
-			metric[peFrequency] = pe.Frequency()
-
-			metricContainer = append(metricContainer, metric)
+			duplicated := deepCopyMetric(metric)
+			duplicated[core] = strconv.Itoa(int(pe.Core()))
+			duplicated[peFrequency] = pe.Frequency()
+			metricContainer = append(metricContainer, duplicated)
 		}
 	}
 
@@ -92,13 +78,16 @@ func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
 
 	for _, metric := range transformed {
 		if value, ok := metric[peFrequency]; ok {
-
 			t.gaugeVec.With(prometheus.Labels{
 				arch:                metric[arch].(string),
 				core:                metric[core].(string),
 				device:              metric[device].(string),
 				uuid:                metric[uuid].(string),
-				kubernetesNode:      t.nodeName,
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				kubernetesNode:      metric[kubernetesNode].(string),
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),
 				kubernetesContainer: metric[kubernetesContainer].(string),

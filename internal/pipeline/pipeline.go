@@ -11,14 +11,14 @@ type Pipeline struct {
 	collectors []collector.Collector
 }
 
-func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
+func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricFactory) *Pipeline {
 	p := Pipeline{
 		collectors: []collector.Collector{
-			collector.NewTemperatureCollector(devices, nodeName),
-			collector.NewPowerCollector(devices, nodeName),
-			collector.NewLivenessCollector(devices, nodeName),
-			collector.NewCoreUtilizationCollector(devices, nodeName),
-			collector.NewCoreFrequencyCollector(devices, nodeName),
+			collector.NewTemperatureCollector(devices, metricFactory),
+			collector.NewPowerCollector(devices, metricFactory),
+			collector.NewLivenessCollector(devices, metricFactory),
+			collector.NewCoreUtilizationCollector(devices, metricFactory),
+			collector.NewCoreFrequencyCollector(devices, metricFactory),
 			//collector.NewMemoryCollector(devices, nodeName),
 		},
 	}
