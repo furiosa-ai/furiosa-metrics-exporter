@@ -14,19 +14,17 @@ const (
 )
 
 type totalCycleCountCollector struct {
-	devices           []smi.Device
-	metricFactory     MetricFactory
-	lastCycleCountMap map[string]map[uint32]float64
-	counterVec        *prometheus.CounterVec
+	devices       []smi.Device
+	metricFactory MetricFactory
+	counterVec    *prometheus.CounterVec
 }
 
 var _ Collector = (*totalCycleCountCollector)(nil)
 
 func NewTotalCycleCountCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
 	return &totalCycleCountCollector{
-		devices:           devices,
-		metricFactory:     metricFactory,
-		lastCycleCountMap: make(map[string]map[uint32]float64),
+		devices:       devices,
+		metricFactory: metricFactory,
 	}
 }
 
@@ -48,16 +46,6 @@ func (t *totalCycleCountCollector) Collect() error {
 			continue
 		}
 
-		deviceUUID, ok := metric[uuid].(string)
-		if !ok {
-			errs = append(errs, errors.New("device uuid is missing"))
-			continue
-		}
-
-		if _, ok = t.lastCycleCountMap[deviceUUID]; !ok {
-			t.lastCycleCountMap[deviceUUID] = make(map[uint32]float64)
-		}
-
 		perfCounters, err := d.DevicePerformanceCounter()
 		if err != nil {
 			errs = append(errs, err)
@@ -67,24 +55,10 @@ func (t *totalCycleCountCollector) Collect() error {
 		counters := perfCounters.PerformanceCounter()
 		for _, counter := range counters {
 			coreIndex := counter.Core()
-			currentTotalCycle := float64(counter.CycleCount())
-			previousTotalCycle, exist := t.lastCycleCountMap[deviceUUID][coreIndex]
-			if !exist {
-				previousTotalCycle = currentTotalCycle
-			}
-
-			var diff float64
-			if currentTotalCycle >= previousTotalCycle {
-				diff = currentTotalCycle - previousTotalCycle
-			} else {
-				diff = currentTotalCycle
-			}
-
 			duplicated := deepCopyMetric(metric)
 			duplicated[core] = strconv.Itoa(int(coreIndex))
-			duplicated[totalCycleCount] = diff
+			duplicated[totalCycleCount] = float64(counter.CycleCount())
 			metricContainer = append(metricContainer, duplicated)
-			t.lastCycleCountMap[deviceUUID][coreIndex] = currentTotalCycle
 		}
 	}
 
@@ -100,6 +74,7 @@ func (t *totalCycleCountCollector) Collect() error {
 }
 
 func (t *totalCycleCountCollector) postProcess(metrics MetricContainer) error {
+	t.counterVec.Reset()
 	transformed := TransformDeviceMetrics(metrics, true)
 
 	for _, metric := range transformed {
