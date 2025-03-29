@@ -19,7 +19,7 @@ func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricF
 			collector.NewLivenessCollector(devices, metricFactory),
 			collector.NewCoreUtilizationCollector(devices, metricFactory),
 			collector.NewCoreFrequencyCollector(devices, metricFactory),
-			collector.NewCycleCountCollector(devices, metricFactory),
+			collector.NewTotalCycleCountCollector(devices, metricFactory),
 			collector.NewTaskExecutionCycleCollector(devices, metricFactory),
 			//collector.NewMemoryCollector(devices, nodeName),
 		},

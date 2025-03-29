@@ -22,28 +22,28 @@ func TestPerformanceCounterCollector_PostProcessing(t *testing.T) {
 			source: func() MetricContainer {
 				tc := MetricContainer{}
 				for i := 0; i < 8; i++ {
-					tc = append(tc, Metric{
-						arch:               "rngd",
-						core:               strconv.Itoa(i),
-						device:             "npu0",
-						kubernetesNodeName: "node",
-						uuid:               "uuid",
-						taskExecutionCycle: float64(1234),
-					})
+					metric := newMetric()
+					metric[arch] = "rngd"
+					metric[core] = strconv.Itoa(i)
+					metric[device] = "npu0"
+					metric[uuid] = "uuid"
+					metric[bdf] = "bdf"
+					metric[taskExecutionCycle] = float64(1234)
+					tc = append(tc, metric)
 				}
 				return tc
 			}(),
 			expected: `
 # HELP furiosa_npu_task_execution_cycle The current task execution cycle of NPU device
 # TYPE furiosa_npu_task_execution_cycle counter
-furiosa_npu_task_execution_cycle{arch="rngd",core="0",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="1",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="2",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="3",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="4",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="5",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="6",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="0",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="1",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="2",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="3",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="4",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="5",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="6",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
 `,
 		},
 	}

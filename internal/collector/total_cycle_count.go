@@ -10,34 +10,34 @@ import (
 )
 
 const (
-	taskExecutionCycle = "task_execution_cycle"
+	totalCycleCount = "total_cycle_count"
 )
 
-type taskExecutionCycleCollector struct {
+type totalCycleCountCollector struct {
 	devices           []smi.Device
 	metricFactory     MetricFactory
 	lastCycleCountMap map[string]map[uint32]float64
 	counterVec        *prometheus.CounterVec
 }
 
-var _ Collector = (*taskExecutionCycleCollector)(nil)
+var _ Collector = (*totalCycleCountCollector)(nil)
 
-func NewTaskExecutionCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
-	return &taskExecutionCycleCollector{
+func NewTotalCycleCountCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+	return &totalCycleCountCollector{
 		devices:           devices,
 		metricFactory:     metricFactory,
 		lastCycleCountMap: make(map[string]map[uint32]float64),
 	}
 }
 
-func (t *taskExecutionCycleCollector) Register() {
+func (t *totalCycleCountCollector) Register() {
 	t.counterVec = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "furiosa_npu_task_execution_cycle",
-		Help: "The current task execution cycle of NPU device",
+		Name: "furiosa_npu_total_cycle_count",
+		Help: "The current total cycle count of NPU device",
 	}, defaultMetricLabels())
 }
 
-func (t *taskExecutionCycleCollector) Collect() error {
+func (t *totalCycleCountCollector) Collect() error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -67,24 +67,24 @@ func (t *taskExecutionCycleCollector) Collect() error {
 		counters := perfCounters.PerformanceCounter()
 		for _, counter := range counters {
 			coreIndex := counter.Core()
-			currentTaskExecutionCycle := float64(counter.TaskExecutionCycle())
-			previousTaskExecutionCycle, exist := t.lastCycleCountMap[deviceUUID][coreIndex]
+			currentTotalCycle := float64(counter.CycleCount())
+			previousTotalCycle, exist := t.lastCycleCountMap[deviceUUID][coreIndex]
 			if !exist {
-				previousTaskExecutionCycle = currentTaskExecutionCycle
+				previousTotalCycle = currentTotalCycle
 			}
 
 			var diff float64
-			if currentTaskExecutionCycle >= previousTaskExecutionCycle {
-				diff = currentTaskExecutionCycle - previousTaskExecutionCycle
+			if currentTotalCycle >= previousTotalCycle {
+				diff = currentTotalCycle - previousTotalCycle
 			} else {
-				diff = currentTaskExecutionCycle
+				diff = currentTotalCycle
 			}
 
 			duplicated := deepCopyMetric(metric)
 			duplicated[core] = strconv.Itoa(int(coreIndex))
-			duplicated[taskExecutionCycle] = diff
+			duplicated[totalCycleCount] = diff
 			metricContainer = append(metricContainer, duplicated)
-			t.lastCycleCountMap[deviceUUID][coreIndex] = currentTaskExecutionCycle
+			t.lastCycleCountMap[deviceUUID][coreIndex] = currentTotalCycle
 		}
 	}
 
@@ -99,11 +99,11 @@ func (t *taskExecutionCycleCollector) Collect() error {
 	return nil
 }
 
-func (t *taskExecutionCycleCollector) postProcess(metrics MetricContainer) error {
+func (t *totalCycleCountCollector) postProcess(metrics MetricContainer) error {
 	transformed := TransformDeviceMetrics(metrics, true)
 
 	for _, metric := range transformed {
-		if value, ok := metric[taskExecutionCycle]; ok {
+		if value, ok := metric[totalCycleCount]; ok {
 			t.counterVec.With(prometheus.Labels{
 				arch:                metric[arch].(string),
 				core:                metric[core].(string),
