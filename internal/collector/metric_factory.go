@@ -39,7 +39,7 @@ func (m *metricFactory) NewDeviceWiseMetric(d smi.Device) (Metric, error) {
 	metric[firmwareVersion] = info.firmwareVersion
 	metric[pertVersion] = info.pertVersion
 	metric[driverVersion] = m.driverVersion
-	metric[kubernetesNode] = m.nodeName
+	metric[hostname] = m.nodeName
 
 	return metric, nil
 }
@@ -110,7 +110,7 @@ func defaultMetricLabels() []string {
 		firmwareVersion,
 		pertVersion,
 		driverVersion,
-		kubernetesNode,
+		hostname,
 		kubernetesNamespace,
 		kubernetesPod,
 		kubernetesContainer,

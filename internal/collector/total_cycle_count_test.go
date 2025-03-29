@@ -36,14 +36,14 @@ func TestTotalCycleCountCollector_PostProcessing(t *testing.T) {
 			expected: `
 # HELP furiosa_npu_total_cycle_count The current total cycle count of NPU device
 # TYPE furiosa_npu_total_cycle_count counter
-furiosa_npu_total_cycle_count{arch="rngd",core="0",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="1",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="2",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="3",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="4",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="5",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="6",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="0",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="1",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="2",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="3",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="4",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="5",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="6",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",container="",core="7",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 5678
 `,
 		},
 	}

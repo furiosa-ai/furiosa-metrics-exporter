@@ -10,8 +10,8 @@ const (
 	firmwareVersion     = "firmware_version"
 	pertVersion         = "pert_version"
 	driverVersion       = "driver_version"
-	kubernetesNode      = "kubernetes_node_name"
-	kubernetesNamespace = "kubernetes_namespace_name"
-	kubernetesPod       = "kubernetes_pod_name"
-	kubernetesContainer = "kubernetes_container_name"
+	hostname            = "hostname"
+	kubernetesNamespace = "namespace"
+	kubernetesPod       = "pod"
+	kubernetesContainer = "container"
 )
