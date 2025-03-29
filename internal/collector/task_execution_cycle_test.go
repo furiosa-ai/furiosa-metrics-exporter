@@ -36,14 +36,14 @@ func TestPerformanceCounterCollector_PostProcessing(t *testing.T) {
 			expected: `
 # HELP furiosa_npu_task_execution_cycle The current task execution cycle of NPU device
 # TYPE furiosa_npu_task_execution_cycle counter
-furiosa_npu_task_execution_cycle{arch="rngd",core="0",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="1",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="2",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="3",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="4",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="5",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="6",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="7",device="npu0",driver_version="",firmware_version="",kubernetes_container_name="",kubernetes_namespace_name="",kubernetes_node_name="",kubernetes_pod_name="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="0",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="1",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="2",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="3",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="4",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="5",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="6",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",container="",core="7",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="bdf",pert_version="",pod="",uuid="uuid"} 1234
 `,
 		},
 	}

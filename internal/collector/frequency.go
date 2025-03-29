@@ -87,7 +87,7 @@ func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
 				firmwareVersion:     metric[firmwareVersion].(string),
 				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),
-				kubernetesNode:      metric[kubernetesNode].(string),
+				hostname:            metric[hostname].(string),
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
 				kubernetesPod:       metric[kubernetesPod].(string),
 				kubernetesContainer: metric[kubernetesContainer].(string),
