@@ -11,31 +11,39 @@ import (
 
 const (
 	taskExecutionCycle = "task_execution_cycle"
+	totalCycleCount    = "total_cycle_count"
 )
 
-type taskExecutionCycleCollector struct {
+type cycleCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
-	counterVec    *prometheus.CounterVec
+
+	taskExecutionCycleCounterVec *prometheus.CounterVec
+	totalCycleCountCounterVec    *prometheus.CounterVec
 }
 
-var _ Collector = (*taskExecutionCycleCollector)(nil)
+var _ Collector = (*cycleCollector)(nil)
 
-func NewTaskExecutionCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
-	return &taskExecutionCycleCollector{
+func NewCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+	return &cycleCollector{
 		devices:       devices,
 		metricFactory: metricFactory,
 	}
 }
 
-func (t *taskExecutionCycleCollector) Register() {
-	t.counterVec = promauto.NewCounterVec(prometheus.CounterOpts{
+func (t *cycleCollector) Register() {
+	t.taskExecutionCycleCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "furiosa_npu_task_execution_cycle",
 		Help: "The current task execution cycle of NPU device",
 	}, defaultMetricLabels())
+
+	t.totalCycleCountCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "furiosa_npu_total_cycle_count",
+		Help: "The current total cycle count of NPU device",
+	}, defaultMetricLabels())
 }
 
-func (t *taskExecutionCycleCollector) Collect() error {
+func (t *cycleCollector) Collect() error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -58,6 +66,8 @@ func (t *taskExecutionCycleCollector) Collect() error {
 			duplicated := deepCopyMetric(metric)
 			duplicated[core] = strconv.Itoa(int(coreIndex))
 			duplicated[taskExecutionCycle] = float64(counter.TaskExecutionCycle())
+			duplicated[totalCycleCount] = float64(counter.CycleCount())
+
 			metricContainer = append(metricContainer, duplicated)
 		}
 	}
@@ -73,13 +83,31 @@ func (t *taskExecutionCycleCollector) Collect() error {
 	return nil
 }
 
-func (t *taskExecutionCycleCollector) postProcess(metrics MetricContainer) error {
-	t.counterVec.Reset()
-	transformed := TransformDeviceMetrics(metrics, true)
+func (t *cycleCollector) postProcess(metrics MetricContainer) error {
+	t.taskExecutionCycleCounterVec.Reset()
+	t.totalCycleCountCounterVec.Reset()
 
+	transformed := TransformDeviceMetrics(metrics, true)
 	for _, metric := range transformed {
 		if value, ok := metric[taskExecutionCycle]; ok {
-			t.counterVec.With(prometheus.Labels{
+			t.taskExecutionCycleCounterVec.With(prometheus.Labels{
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
+			}).Add(value.(float64))
+		}
+
+		if value, ok := metric[totalCycleCount]; ok {
+			t.totalCycleCountCounterVec.With(prometheus.Labels{
 				arch:                metric[arch].(string),
 				core:                metric[core].(string),
 				device:              metric[device].(string),
