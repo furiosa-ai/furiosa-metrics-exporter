@@ -84,51 +84,43 @@ func (t *cycleCollector) Collect() error {
 }
 
 func (t *cycleCollector) postProcess(metrics MetricContainer) error {
-	{
-		t.taskExecutionCycleCounterVec.Reset()
-		transformed := TransformDeviceMetrics(metrics, true)
+	t.taskExecutionCycleCounterVec.Reset()
+	t.totalCycleCountCounterVec.Reset()
 
-		for _, metric := range transformed {
-			if value, ok := metric[taskExecutionCycle]; ok {
-				t.taskExecutionCycleCounterVec.With(prometheus.Labels{
-					arch:                metric[arch].(string),
-					core:                metric[core].(string),
-					device:              metric[device].(string),
-					uuid:                metric[uuid].(string),
-					bdf:                 metric[bdf].(string),
-					firmwareVersion:     metric[firmwareVersion].(string),
-					pertVersion:         metric[pertVersion].(string),
-					driverVersion:       metric[driverVersion].(string),
-					hostname:            metric[hostname].(string),
-					kubernetesNamespace: metric[kubernetesNamespace].(string),
-					kubernetesPod:       metric[kubernetesPod].(string),
-					kubernetesContainer: metric[kubernetesContainer].(string),
-				}).Add(value.(float64))
-			}
+	transformed := TransformDeviceMetrics(metrics, true)
+	for _, metric := range transformed {
+		if value, ok := metric[taskExecutionCycle]; ok {
+			t.taskExecutionCycleCounterVec.With(prometheus.Labels{
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
+			}).Add(value.(float64))
 		}
-	}
 
-	{
-		t.totalCycleCountCounterVec.Reset()
-		transformed := TransformDeviceMetrics(metrics, true)
-
-		for _, metric := range transformed {
-			if value, ok := metric[totalCycleCount]; ok {
-				t.totalCycleCountCounterVec.With(prometheus.Labels{
-					arch:                metric[arch].(string),
-					core:                metric[core].(string),
-					device:              metric[device].(string),
-					uuid:                metric[uuid].(string),
-					bdf:                 metric[bdf].(string),
-					firmwareVersion:     metric[firmwareVersion].(string),
-					pertVersion:         metric[pertVersion].(string),
-					driverVersion:       metric[driverVersion].(string),
-					hostname:            metric[hostname].(string),
-					kubernetesNamespace: metric[kubernetesNamespace].(string),
-					kubernetesPod:       metric[kubernetesPod].(string),
-					kubernetesContainer: metric[kubernetesContainer].(string),
-				}).Add(value.(float64))
-			}
+		if value, ok := metric[totalCycleCount]; ok {
+			t.totalCycleCountCounterVec.With(prometheus.Labels{
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
+			}).Add(value.(float64))
 		}
 	}
 
