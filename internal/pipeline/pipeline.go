@@ -47,7 +47,8 @@ func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricF
 func (p *Pipeline) Collect() []error {
 	errors := make([]error, len(p.collectors))
 
-	collector.SyncDeviceSMICache(p.devices)
+	smiErrors := collector.SyncDeviceSMICache(p.devices)
+
 	wg := new(sync.WaitGroup)
 	for i := range p.collectors {
 		wg.Add(1)
@@ -66,6 +67,10 @@ func (p *Pipeline) Collect() []error {
 		if errors[i] != nil {
 			results = append(results, errors[i])
 		}
+	}
+
+	for _, errs := range smiErrors {
+		results = append(results, errs...)
 	}
 	return results
 }
