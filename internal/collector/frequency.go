@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -14,16 +13,16 @@ const (
 )
 
 type coreFrequencyCollector struct {
-	devices       []smi.Device
+	deviceNames   []string
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*coreFrequencyCollector)(nil)
 
-func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewCoreFrequencyCollector(deviceNames []string, metricFactory MetricFactory) Collector {
 	return &coreFrequencyCollector{
-		devices:       devices,
+		deviceNames:   deviceNames,
 		metricFactory: metricFactory,
 	}
 }
@@ -36,21 +35,17 @@ func (t *coreFrequencyCollector) Register() {
 }
 
 func (t *coreFrequencyCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0, len(t.deviceNames))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+	for _, deviceName := range t.deviceNames {
+		metric, err := t.metricFactory.NewDeviceWiseMetric(deviceName)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		coreFrequency, err := d.CoreFrequency()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		coreFrequency := DeviceSMICacheMap[deviceName].coreFrequency
 
 		frequency := coreFrequency.PeFrequency()
 		for _, pe := range frequency {

@@ -3,13 +3,12 @@ package collector
 import (
 	"errors"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type temperatureCollector struct {
-	devices       []smi.Device
+	deviceNames   []string
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 }
@@ -21,9 +20,9 @@ const (
 
 var _ Collector = (*temperatureCollector)(nil)
 
-func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewTemperatureCollector(deviceNames []string, metricFactory MetricFactory) Collector {
 	return &temperatureCollector{
-		devices:       devices,
+		deviceNames:   deviceNames,
 		metricFactory: metricFactory,
 	}
 }
@@ -36,21 +35,17 @@ func (t *temperatureCollector) Register() {
 }
 
 func (t *temperatureCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0, len(t.deviceNames))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+	for _, deviceName := range t.deviceNames {
+		metric, err := t.metricFactory.NewDeviceWiseMetric(deviceName)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		deviceTemperature, err := d.DeviceTemperature()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		deviceTemperature := DeviceSMICacheMap[deviceName].temperature
 
 		metric[ambient] = deviceTemperature.Ambient()
 		metric[peak] = deviceTemperature.SocPeak()

@@ -3,7 +3,6 @@ package collector
 import (
 	"errors"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -13,16 +12,16 @@ const (
 )
 
 type powerCollector struct {
-	devices       []smi.Device
+	deviceNames   []string
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*powerCollector)(nil)
 
-func NewPowerCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewPowerCollector(deviceNames []string, metricFactory MetricFactory) Collector {
 	return &powerCollector{
-		devices:       devices,
+		deviceNames:   deviceNames,
 		metricFactory: metricFactory,
 	}
 }
@@ -35,21 +34,17 @@ func (t *powerCollector) Register() {
 }
 
 func (t *powerCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0, len(t.deviceNames))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+	for _, deviceName := range t.deviceNames {
+		metric, err := t.metricFactory.NewDeviceWiseMetric(deviceName)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		power, err := d.PowerConsumption()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		power := DeviceSMICacheMap[deviceName].power
 
 		metric[rms] = power
 		metricContainer = append(metricContainer, metric)

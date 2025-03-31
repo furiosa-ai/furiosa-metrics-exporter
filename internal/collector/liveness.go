@@ -3,7 +3,6 @@ package collector
 import (
 	"errors"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -13,16 +12,16 @@ const (
 )
 
 type livenessCollector struct {
-	devices       []smi.Device
+	deviceNames   []string
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*livenessCollector)(nil)
 
-func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewLivenessCollector(deviceNames []string, metricFactory MetricFactory) Collector {
 	return &livenessCollector{
-		devices:       devices,
+		deviceNames:   deviceNames,
 		metricFactory: metricFactory,
 	}
 }
@@ -35,21 +34,17 @@ func (t *livenessCollector) Register() {
 }
 
 func (t *livenessCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0, len(t.deviceNames))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+	for _, deviceName := range t.deviceNames {
+		metric, err := t.metricFactory.NewDeviceWiseMetric(deviceName)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		value, err := d.Liveness()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		value := DeviceSMICacheMap[deviceName].liveness
 
 		metric[liveness] = value
 		metricContainer = append(metricContainer, metric)

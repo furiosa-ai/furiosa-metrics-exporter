@@ -8,19 +8,31 @@ import (
 )
 
 type Pipeline struct {
+	devices    []smi.Device
 	collectors []collector.Collector
 }
 
 func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricFactory) *Pipeline {
+	deviceNames := make([]string, 0, len(devices))
+	for _, d := range devices {
+		deviceInfo, err := d.DeviceInfo()
+		if err != nil {
+			continue
+		}
+
+		deviceNames = append(deviceNames, deviceInfo.Name())
+	}
+
 	p := Pipeline{
+		devices: devices,
 		collectors: []collector.Collector{
-			collector.NewTemperatureCollector(devices, metricFactory),
-			collector.NewPowerCollector(devices, metricFactory),
-			collector.NewLivenessCollector(devices, metricFactory),
-			collector.NewCoreUtilizationCollector(devices, metricFactory),
-			collector.NewCoreFrequencyCollector(devices, metricFactory),
-			collector.NewTotalCycleCountCollector(devices, metricFactory),
-			collector.NewTaskExecutionCycleCollector(devices, metricFactory),
+			collector.NewTemperatureCollector(deviceNames, metricFactory),
+			collector.NewPowerCollector(deviceNames, metricFactory),
+			collector.NewLivenessCollector(deviceNames, metricFactory),
+			collector.NewCoreUtilizationCollector(deviceNames, metricFactory),
+			collector.NewCoreFrequencyCollector(deviceNames, metricFactory),
+			collector.NewTotalCycleCountCollector(deviceNames, metricFactory),
+			collector.NewTaskExecutionCycleCollector(deviceNames, metricFactory),
 			//collector.NewMemoryCollector(devices, nodeName),
 		},
 	}
@@ -35,6 +47,7 @@ func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricF
 func (p *Pipeline) Collect() []error {
 	errors := make([]error, len(p.collectors))
 
+	collector.SyncDeviceSMICache(p.devices)
 	wg := new(sync.WaitGroup)
 	for i := range p.collectors {
 		wg.Add(1)

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -14,16 +13,16 @@ const (
 )
 
 type coreUtilizationCollector struct {
-	devices       []smi.Device
+	deviceNames   []string
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 }
 
 var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewCoreUtilizationCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewCoreUtilizationCollector(deviceNames []string, metricFactory MetricFactory) Collector {
 	return &coreUtilizationCollector{
-		devices:       devices,
+		deviceNames:   deviceNames,
 		metricFactory: metricFactory,
 	}
 }
@@ -36,21 +35,17 @@ func (t *coreUtilizationCollector) Register() {
 }
 
 func (t *coreUtilizationCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0, len(t.deviceNames))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+	for _, deviceName := range t.deviceNames {
+		metric, err := t.metricFactory.NewDeviceWiseMetric(deviceName)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		coreUtilization, err := d.CoreUtilization()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		coreUtilization := DeviceSMICacheMap[deviceName].coreUtilization
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {

@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/exporter"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"

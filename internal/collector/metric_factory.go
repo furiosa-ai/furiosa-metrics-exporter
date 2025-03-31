@@ -2,12 +2,11 @@ package collector
 
 import (
 	"fmt"
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"slices"
 )
 
 type MetricFactory interface {
-	NewDeviceWiseMetric(d smi.Device) (Metric, error)
+	NewDeviceWiseMetric(deviceName string) (Metric, error)
 }
 
 var _ MetricFactory = (*metricFactory)(nil)
@@ -24,9 +23,9 @@ type metricFactory struct {
 	driverVersion string
 }
 
-func (m *metricFactory) NewDeviceWiseMetric(d smi.Device) (Metric, error) {
+func (m *metricFactory) NewDeviceWiseMetric(deviceName string) (Metric, error) {
 	metric := newMetric()
-	info, err := getDeviceInfo(d)
+	info, err := getDeviceInfo(deviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -55,16 +54,10 @@ type deviceInfo struct {
 	pertVersion     string
 }
 
-func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
-	info, err := device.DeviceInfo()
-	if err != nil {
-		return nil, err
-	}
+func getDeviceInfo(deviceName string) (*deviceInfo, error) {
+	info := DeviceSMICacheMap[deviceName].deviceInfo
 
-	files, err := device.DeviceFiles()
-	if err != nil {
-		return nil, err
-	}
+	files := DeviceSMICacheMap[deviceName].deviceFiles
 
 	accumulatedCores := map[uint32]uint32{}
 	for _, file := range files {

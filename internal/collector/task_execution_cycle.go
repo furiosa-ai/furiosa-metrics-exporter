@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -14,16 +13,16 @@ const (
 )
 
 type taskExecutionCycleCollector struct {
-	devices       []smi.Device
+	deviceNames   []string
 	metricFactory MetricFactory
 	counterVec    *prometheus.CounterVec
 }
 
 var _ Collector = (*taskExecutionCycleCollector)(nil)
 
-func NewTaskExecutionCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewTaskExecutionCycleCollector(deviceNames []string, metricFactory MetricFactory) Collector {
 	return &taskExecutionCycleCollector{
-		devices:       devices,
+		deviceNames:   deviceNames,
 		metricFactory: metricFactory,
 	}
 }
@@ -36,21 +35,17 @@ func (t *taskExecutionCycleCollector) Register() {
 }
 
 func (t *taskExecutionCycleCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+	metricContainer := make(MetricContainer, 0, len(t.deviceNames))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+	for _, deviceName := range t.deviceNames {
+		metric, err := t.metricFactory.NewDeviceWiseMetric(deviceName)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		perfCounters, err := d.DevicePerformanceCounter()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+		perfCounters := DeviceSMICacheMap[deviceName].performanceCounter
 
 		counters := perfCounters.PerformanceCounter()
 		for _, counter := range counters {
