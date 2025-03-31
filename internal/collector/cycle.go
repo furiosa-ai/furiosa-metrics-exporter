@@ -48,52 +48,27 @@ func (t *cycleCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		{
-			metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			perfCounters, err := d.DevicePerformanceCounter()
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			counters := perfCounters.PerformanceCounter()
-			for _, counter := range counters {
-				coreIndex := counter.Core()
-				duplicated := deepCopyMetric(metric)
-				duplicated[core] = strconv.Itoa(int(coreIndex))
-				duplicated[taskExecutionCycle] = float64(counter.TaskExecutionCycle())
-
-				metricContainer = append(metricContainer, duplicated)
-			}
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
 
-		{
-			metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
+		perfCounters, err := d.DevicePerformanceCounter()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
-			perfCounters, err := d.DevicePerformanceCounter()
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
+		counters := perfCounters.PerformanceCounter()
+		for _, counter := range counters {
+			coreIndex := counter.Core()
+			duplicated := deepCopyMetric(metric)
+			duplicated[core] = strconv.Itoa(int(coreIndex))
+			duplicated[taskExecutionCycle] = float64(counter.TaskExecutionCycle())
+			duplicated[totalCycleCount] = float64(counter.CycleCount())
 
-			counters := perfCounters.PerformanceCounter()
-			for _, counter := range counters {
-				coreIndex := counter.Core()
-				duplicated := deepCopyMetric(metric)
-				duplicated[core] = strconv.Itoa(int(coreIndex))
-				duplicated[totalCycleCount] = float64(counter.CycleCount())
-
-				metricContainer = append(metricContainer, duplicated)
-			}
+			metricContainer = append(metricContainer, duplicated)
 		}
 	}
 
