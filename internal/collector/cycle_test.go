@@ -67,7 +67,7 @@ furiosa_npu_total_cycle_count{arch="rngd",container="",core="7",device="npu0",dr
 			err := sut.postProcess(tc.source)
 			assert.Nil(t, err)
 
-			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_"+taskExecutionCycle)
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_task_execution_cycle")
 			assert.NoError(t, err)
 		})
 	}
