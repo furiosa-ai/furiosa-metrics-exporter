@@ -44,7 +44,7 @@ func (t *cycleCollector) Register() {
 }
 
 func (t *cycleCollector) Collect() error {
-	metricContainer := make(MetricContainer, 0, len(t.devices)*2)
+	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
