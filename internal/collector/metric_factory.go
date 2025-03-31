@@ -2,8 +2,10 @@ package collector
 
 import (
 	"fmt"
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"os"
 	"slices"
+
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 )
 
 type MetricFactory interface {
@@ -39,7 +41,13 @@ func (m *metricFactory) NewDeviceWiseMetric(d smi.Device) (Metric, error) {
 	metric[firmwareVersion] = info.firmwareVersion
 	metric[pertVersion] = info.pertVersion
 	metric[driverVersion] = m.driverVersion
-	metric[hostname] = m.nodeName
+	if m.nodeName != "" {
+		metric[hostname] = m.nodeName
+	} else if osHostname, err := os.Hostname(); err == nil {
+		metric[hostname] = osHostname
+	} else {
+		metric[hostname] = ""
+	}
 
 	return metric, nil
 }
