@@ -181,6 +181,17 @@ The following shows real-world example of the metrics:
   furiosa_npu_task_execution_cycle{arch="rngd",container="furiosa",core="7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",namespace="default",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 5.685170235e+09
 
 
+When the partitioned device is allocated to a pod, device-wise metrics that are exported for each device such as liveness, temperature and power will also be exported for partitioned devices.
+
+For example, if the device npu0 is partitioned into 2 devices (core 0-3, 4-7) and the partitioned device with core 0-3 is allocated to a pod, the temperature metrics will be exported as follows:
+
+.. code-block:: sh
+
+  furiosa_npu_hw_temperature{arch="rngd",container="",core="0-7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="ambient",namespace="",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="",uuid="09512C86-0702-4303-8F40-474746474A40"} 50
+  furiosa_npu_hw_temperature{arch="rngd",container="",core="0-7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="peak",namespace="",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="",uuid="09512C86-0702-4303-8F40-474746474A40"} 64.41
+  furiosa_npu_hw_temperature{arch="rngd",container="furiosa",core="0-3",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="ambient",namespace="default",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 50
+  furiosa_npu_hw_temperature{arch="rngd",container="furiosa",core="0-3",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="peak",namespace="default",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 64.41
+
 
 Deploying Furiosa Metrics Exporter with Helm
 ---------------------------------------------------------
