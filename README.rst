@@ -184,8 +184,12 @@ The following shows real-world example of the metrics:
 
 Deploying Furiosa Metrics Exporter with Helm
 ---------------------------------------------------------
-The Furiosa metrics exporter helm chart is available at https://github.com/furiosa-ai/helm-charts. To configure deployment as you need, you can modify ``charts/furiosa-metrics-exporter/values.yaml``.
-For example, the Furiosa metrics exporter Helm chart automatically creates a Service Object with Prometheus annotations to enable metric scraping automatically. You can modify the values.yaml to change the port or disable the Prometheus annotations if needed.
+The Furiosa metrics exporter helm chart is available at https://github.com/furiosa-ai/helm-charts.
+
+To configure deployment as you need, you can modify ``charts/furiosa-metrics-exporter/values.yaml``.
+For example, the Furiosa metrics exporter Helm chart automatically creates a Service Object with Prometheus annotations to enable metric scraping automatically.
+You can modify the values.yaml to change the port or disable the Prometheus annotations if needed.
+
 You can deploy the Furiosa Metrics Exporter by running the following commands:
 
 .. code-block:: sh
