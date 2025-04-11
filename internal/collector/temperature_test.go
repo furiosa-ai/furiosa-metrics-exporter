@@ -10,8 +10,11 @@ import (
 )
 
 func TestTempCollector_PostProcessing(t *testing.T) {
+	registryWithPod := prometheus.NewRegistry()
+	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
+
 	c := &temperatureCollector{}
-	c.Register()
+	c.Register(registryWithPod)
 
 	tc := MetricContainer{}
 	metric := newMetric()
@@ -28,10 +31,10 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 	expected := `
 # HELP furiosa_npu_hw_temperature The current temperature of NPU device
 # TYPE furiosa_npu_hw_temperature gauge
-furiosa_npu_hw_temperature{arch="rngd",container="",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",label="ambient",namespace="",pci_bus_id="",pert_version="",pod="",uuid="uuid"} 35
-furiosa_npu_hw_temperature{arch="rngd",container="",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",label="peak",namespace="",pci_bus_id="",pert_version="",pod="",uuid="uuid"} 39
+furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",label="ambient",pci_bus_id="",pert_version="",uuid="uuid"} 35
+furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",label="peak",pci_bus_id="",pert_version="",uuid="uuid"} 39
 `
-	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
+	err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(expected), "furiosa_npu_hw_temperature")
 	assert.NoError(t, err)
 }
 

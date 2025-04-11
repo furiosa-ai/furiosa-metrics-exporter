@@ -34,7 +34,7 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 				return tc
 			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",container="",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="",pert_version="",pod="",uuid="uuid"} 1
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="",pert_version="",uuid="uuid"} 1
 `,
 		},
 		{
@@ -51,19 +51,22 @@ furiosa_npu_alive{arch="rngd",container="",core="0-7",device="npu0",driver_versi
 				return tc
 			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",container="",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="",pert_version="",pod="",uuid="uuid"} 0
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="",pert_version="",uuid="uuid"} 0
 `,
 		},
 	}
 
+	registryWithPod := prometheus.NewRegistry()
+	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
+
 	p := &livenessCollector{}
-	p.Register()
+	p.Register(registryWithPod)
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			err := p.postProcess(tc.source)
 			assert.NoError(t, err)
 
-			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
+			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
 			assert.NoError(t, err)
 		})
 	}
