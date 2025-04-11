@@ -20,6 +20,9 @@ type cycleCollector struct {
 
 	taskExecutionCycleCounterVec *prometheus.CounterVec
 	totalCycleCountCounterVec    *prometheus.CounterVec
+
+	taskExecutionCycleCounterVecWithPod *prometheus.CounterVec
+	totalCycleCountCounterVecWithPod    *prometheus.CounterVec
 }
 
 var _ Collector = (*cycleCollector)(nil)
@@ -31,16 +34,26 @@ func NewCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collec
 	}
 }
 
-func (t *cycleCollector) Register() {
+func (t *cycleCollector) Register(registryWithPod *prometheus.Registry) {
 	t.taskExecutionCycleCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "furiosa_npu_task_execution_cycle",
 		Help: "The current task execution cycle of NPU device",
 	}, defaultMetricLabels())
+	t.taskExecutionCycleCounterVecWithPod = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "furiosa_npu_task_execution_cycle",
+		Help: "The current task execution cycle of NPU device",
+	}, defaultMetricLabelsWithPod())
+	registryWithPod.MustRegister(t.taskExecutionCycleCounterVecWithPod)
 
 	t.totalCycleCountCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "furiosa_npu_total_cycle_count",
 		Help: "The current total cycle count of NPU device",
 	}, defaultMetricLabels())
+	t.totalCycleCountCounterVecWithPod = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "furiosa_npu_total_cycle_count",
+		Help: "The current total cycle count of NPU device",
+	}, defaultMetricLabelsWithPod())
+	registryWithPod.MustRegister(t.totalCycleCountCounterVecWithPod)
 }
 
 func (t *cycleCollector) Collect() error {
@@ -86,41 +99,71 @@ func (t *cycleCollector) Collect() error {
 func (t *cycleCollector) postProcess(metrics MetricContainer) error {
 	t.taskExecutionCycleCounterVec.Reset()
 	t.totalCycleCountCounterVec.Reset()
+	t.taskExecutionCycleCounterVecWithPod.Reset()
+	t.totalCycleCountCounterVecWithPod.Reset()
 
 	transformed := TransformDeviceMetrics(metrics, true)
 	for _, metric := range transformed {
 		if value, ok := metric[taskExecutionCycle]; ok {
-			t.taskExecutionCycleCounterVec.With(prometheus.Labels{
-				arch:                metric[arch].(string),
-				core:                metric[core].(string),
-				device:              metric[device].(string),
-				uuid:                metric[uuid].(string),
-				bdf:                 metric[bdf].(string),
-				firmwareVersion:     metric[firmwareVersion].(string),
-				pertVersion:         metric[pertVersion].(string),
-				driverVersion:       metric[driverVersion].(string),
-				hostname:            metric[hostname].(string),
-				kubernetesNamespace: metric[kubernetesNamespace].(string),
-				kubernetesPod:       metric[kubernetesPod].(string),
-				kubernetesContainer: metric[kubernetesContainer].(string),
-			}).Add(value.(float64))
+			if podname, ok := metric[kubernetesPod].(string); !ok || (ok && podname == "") {
+				t.taskExecutionCycleCounterVec.With(prometheus.Labels{
+					arch:            metric[arch].(string),
+					core:            metric[core].(string),
+					device:          metric[device].(string),
+					uuid:            metric[uuid].(string),
+					bdf:             metric[bdf].(string),
+					firmwareVersion: metric[firmwareVersion].(string),
+					pertVersion:     metric[pertVersion].(string),
+					driverVersion:   metric[driverVersion].(string),
+					hostname:        metric[hostname].(string),
+				}).Add(value.(float64))
+			} else {
+				t.taskExecutionCycleCounterVecWithPod.With(prometheus.Labels{
+					arch:                metric[arch].(string),
+					core:                metric[core].(string),
+					device:              metric[device].(string),
+					uuid:                metric[uuid].(string),
+					bdf:                 metric[bdf].(string),
+					firmwareVersion:     metric[firmwareVersion].(string),
+					pertVersion:         metric[pertVersion].(string),
+					driverVersion:       metric[driverVersion].(string),
+					hostname:            metric[hostname].(string),
+					kubernetesNamespace: metric[kubernetesNamespace].(string),
+					kubernetesPod:       metric[kubernetesPod].(string),
+					kubernetesContainer: metric[kubernetesContainer].(string),
+				}).Add(value.(float64))
+			}
 		}
 
 		if value, ok := metric[totalCycleCount]; ok {
-			t.totalCycleCountCounterVec.With(prometheus.Labels{
-				arch:                metric[arch].(string),
-				core:                metric[core].(string),
-				device:              metric[device].(string),
-				uuid:                metric[uuid].(string),
-				bdf:                 metric[bdf].(string),
-				firmwareVersion:     metric[firmwareVersion].(string),
-				pertVersion:         metric[pertVersion].(string),
-				driverVersion:       metric[driverVersion].(string),
-				hostname:            metric[hostname].(string),
-				kubernetesNamespace: metric[kubernetesNamespace].(string),
-				kubernetesPod:       metric[kubernetesPod].(string),
-				kubernetesContainer: metric[kubernetesContainer].(string),
-			}).Add(value.(float64))
+			if podname, ok := metric[kubernetesPod].(string); !ok || (ok && podname == "") {
+				t.totalCycleCountCounterVec.With(prometheus.Labels{
+					arch:            metric[arch].(string),
+					core:            metric[core].(string),
+					device:          metric[device].(string),
+					uuid:            metric[uuid].(string),
+					bdf:             metric[bdf].(string),
+					firmwareVersion: metric[firmwareVersion].(string),
+					pertVersion:     metric[pertVersion].(string),
+					driverVersion:   metric[driverVersion].(string),
+					hostname:        metric[hostname].(string),
+				}).Add(value.(float64))
+			} else {
+				t.totalCycleCountCounterVecWithPod.With(prometheus.Labels{
+					arch:                metric[arch].(string),
+					core:                metric[core].(string),
+					device:              metric[device].(string),
+					uuid:                metric[uuid].(string),
+					bdf:                 metric[bdf].(string),
+					firmwareVersion:     metric[firmwareVersion].(string),
+					pertVersion:         metric[pertVersion].(string),
+					driverVersion:       metric[driverVersion].(string),
+					hostname:            metric[hostname].(string),
+					kubernetesNamespace: metric[kubernetesNamespace].(string),
+					kubernetesPod:       metric[kubernetesPod].(string),
+					kubernetesContainer: metric[kubernetesContainer].(string),
+				}).Add(value.(float64))
+			}
 		}
 	}
 

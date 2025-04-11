@@ -13,9 +13,10 @@ const (
 )
 
 type livenessCollector struct {
-	devices       []smi.Device
-	metricFactory MetricFactory
-	gaugeVec      *prometheus.GaugeVec
+	devices         []smi.Device
+	metricFactory   MetricFactory
+	gaugeVec        *prometheus.GaugeVec
+	gaugeVecWithPod *prometheus.GaugeVec
 }
 
 var _ Collector = (*livenessCollector)(nil)
@@ -27,11 +28,17 @@ func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory) Col
 	}
 }
 
-func (t *livenessCollector) Register() {
+func (t *livenessCollector) Register(registryWithPod *prometheus.Registry) {
 	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "furiosa_npu_alive",
 		Help: "The liveness of NPU device",
 	}, defaultMetricLabels())
+
+	t.gaugeVecWithPod = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "furiosa_npu_alive",
+		Help: "The liveness of NPU device",
+	}, defaultMetricLabelsWithPod())
+	registryWithPod.MustRegister(t.gaugeVecWithPod)
 }
 
 func (t *livenessCollector) Collect() error {
@@ -69,6 +76,7 @@ func (t *livenessCollector) Collect() error {
 func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 	transformed := TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
+	t.gaugeVecWithPod.Reset()
 
 	for _, metric := range transformed {
 		if value, ok := metric[liveness]; ok {
@@ -78,21 +86,34 @@ func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 			} else {
 				alive = 0
 			}
-
-			t.gaugeVec.With(prometheus.Labels{
-				arch:                metric[arch].(string),
-				core:                metric[core].(string),
-				device:              metric[device].(string),
-				uuid:                metric[uuid].(string),
-				bdf:                 metric[bdf].(string),
-				firmwareVersion:     metric[firmwareVersion].(string),
-				pertVersion:         metric[pertVersion].(string),
-				driverVersion:       metric[driverVersion].(string),
-				hostname:            metric[hostname].(string),
-				kubernetesNamespace: metric[kubernetesNamespace].(string),
-				kubernetesPod:       metric[kubernetesPod].(string),
-				kubernetesContainer: metric[kubernetesContainer].(string),
-			}).Set(alive)
+			if podname, ok := metric[kubernetesPod].(string); !ok || (ok && podname == "") {
+				t.gaugeVec.With(prometheus.Labels{
+					arch:            metric[arch].(string),
+					core:            metric[core].(string),
+					device:          metric[device].(string),
+					uuid:            metric[uuid].(string),
+					bdf:             metric[bdf].(string),
+					firmwareVersion: metric[firmwareVersion].(string),
+					pertVersion:     metric[pertVersion].(string),
+					driverVersion:   metric[driverVersion].(string),
+					hostname:        metric[hostname].(string),
+				}).Set(alive)
+			} else {
+				t.gaugeVecWithPod.With(prometheus.Labels{
+					arch:                metric[arch].(string),
+					core:                metric[core].(string),
+					device:              metric[device].(string),
+					uuid:                metric[uuid].(string),
+					bdf:                 metric[bdf].(string),
+					firmwareVersion:     metric[firmwareVersion].(string),
+					pertVersion:         metric[pertVersion].(string),
+					driverVersion:       metric[driverVersion].(string),
+					hostname:            metric[hostname].(string),
+					kubernetesNamespace: metric[kubernetesNamespace].(string),
+					kubernetesPod:       metric[kubernetesPod].(string),
+					kubernetesContainer: metric[kubernetesContainer].(string),
+				}).Set(alive)
+			}
 
 		}
 	}

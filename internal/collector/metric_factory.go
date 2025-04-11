@@ -2,8 +2,9 @@ package collector
 
 import (
 	"fmt"
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"slices"
+
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 )
 
 type MetricFactory interface {
@@ -100,7 +101,7 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 	}, nil
 }
 
-func defaultMetricLabels() []string {
+func defaultMetricLabelsWithPod() []string {
 	return []string{
 		arch,
 		core,
@@ -114,6 +115,20 @@ func defaultMetricLabels() []string {
 		kubernetesNamespace,
 		kubernetesPod,
 		kubernetesContainer,
+	}
+}
+
+func defaultMetricLabels() []string {
+	return []string{
+		arch,
+		core,
+		device,
+		uuid,
+		bdf,
+		firmwareVersion,
+		pertVersion,
+		driverVersion,
+		hostname,
 	}
 }
 
