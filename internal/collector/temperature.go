@@ -5,7 +5,6 @@ import (
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type temperatureCollector struct {
@@ -29,10 +28,18 @@ func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory) 
 }
 
 func (t *temperatureCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
 		Help: "The current temperature of NPU device",
-	}, append(defaultMetricLabels(), label))
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, append(defaultMetricLabels(), label))
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *temperatureCollector) Collect() error {

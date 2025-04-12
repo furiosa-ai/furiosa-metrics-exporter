@@ -5,7 +5,6 @@ import (
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -28,10 +27,18 @@ func NewPowerCollector(devices []smi.Device, metricFactory MetricFactory) Collec
 }
 
 func (t *powerCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_power",
 		Help: "The current power of NPU device",
-	}, append(defaultMetricLabels(), label))
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, append(defaultMetricLabels(), label))
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *powerCollector) Collect() error {

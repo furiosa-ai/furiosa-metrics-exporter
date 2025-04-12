@@ -10,11 +10,8 @@ import (
 )
 
 func TestPowerCollector_PostProcessing(t *testing.T) {
-	registryWithPod := prometheus.NewRegistry()
-	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
 	p := &powerCollector{}
-	p.Register(registryWithPod)
+	p.Register()
 
 	tc := MetricContainer{}
 	metric := newMetric()
@@ -37,7 +34,7 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 furiosa_npu_hw_power{arch="rngd",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",label="rms",pci_bus_id="bdf",pert_version="",uuid="uuid"} 4795000
 `
 
-	err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
+	err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(expected), "furiosa_npu_hw_power")
 	assert.NoError(t, err)
 }
 

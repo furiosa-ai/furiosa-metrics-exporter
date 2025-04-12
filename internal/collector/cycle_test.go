@@ -60,17 +60,14 @@ furiosa_npu_total_cycle_count{arch="rngd",core="7",device="npu0",driver_version=
 		},
 	}
 
-	registryWithPod := prometheus.NewRegistry()
-	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
 	sut := &cycleCollector{}
-	sut.Register(registryWithPod)
+	sut.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			err := sut.postProcess(tc.source)
 			assert.Nil(t, err)
 
-			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_task_execution_cycle")
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_task_execution_cycle")
 			assert.NoError(t, err)
 		})
 	}

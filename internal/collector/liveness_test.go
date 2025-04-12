@@ -56,17 +56,14 @@ furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",driver_version="",firmwar
 		},
 	}
 
-	registryWithPod := prometheus.NewRegistry()
-	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
 	p := &livenessCollector{}
-	p.Register(registryWithPod)
+	p.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			err := p.postProcess(tc.source)
 			assert.NoError(t, err)
 
-			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")
 			assert.NoError(t, err)
 		})
 	}

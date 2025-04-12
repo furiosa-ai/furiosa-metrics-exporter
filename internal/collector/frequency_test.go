@@ -48,17 +48,14 @@ furiosa_npu_core_frequency{arch="rngd",core="7",device="npu0",driver_version="",
 		},
 	}
 
-	registryWithPod := prometheus.NewRegistry()
-	combinedGatherer := prometheus.Gatherers{registryWithPod, prometheus.DefaultGatherer}
-
 	cu := &coreFrequencyCollector{}
-	cu.Register(registryWithPod)
+	cu.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			err := cu.postProcess(tc.source)
 			assert.NoError(t, err)
 
-			err = testutil.GatherAndCompare(combinedGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_frequency")
+			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_frequency")
 			assert.NoError(t, err)
 		})
 	}
