@@ -3,15 +3,13 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"net/http"
 	"time"
-
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 )
@@ -25,8 +23,6 @@ type Exporter struct {
 }
 
 func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi.Device, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
-	registryWithPod := prometheus.NewRegistry()
-
 	exporter := Exporter{
 		logger:          logger,
 		collectInterval: cfg.Interval,
@@ -35,15 +31,13 @@ func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi
 			Handler: func() http.Handler {
 				// build Webserver
 				mux := http.NewServeMux()
-				mux.Handle("/metrics",
-					promhttp.HandlerFor(prometheus.Gatherers{prometheus.DefaultGatherer, registryWithPod},
-						promhttp.HandlerOpts{}))
+				mux.Handle("/metrics", promhttp.Handler())
 
 				return mux
 			}(),
 		},
 		errChan:  errChan,
-		pipeline: pipeline.NewRegisteredPipeline(devices, metricFactory, registryWithPod),
+		pipeline: pipeline.NewRegisteredPipeline(devices, metricFactory),
 	}
 
 	return &exporter, nil

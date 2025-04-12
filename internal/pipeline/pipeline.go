@@ -5,14 +5,13 @@ import (
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Pipeline struct {
 	collectors []collector.Collector
 }
 
-func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricFactory, registryWithPod *prometheus.Registry) *Pipeline {
+func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricFactory) *Pipeline {
 	p := Pipeline{
 		collectors: []collector.Collector{
 			collector.NewTemperatureCollector(devices, metricFactory),
@@ -28,7 +27,7 @@ func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricF
 	}
 
 	for _, c := range p.collectors {
-		c.Register(registryWithPod)
+		c.Register()
 	}
 
 	return &p
