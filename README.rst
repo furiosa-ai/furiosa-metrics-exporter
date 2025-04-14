@@ -104,6 +104,7 @@ The following table describes the common metric labels:
    * - container
      - The name of the Kubernetes container where the exporter is running. This attribute can be missing if the exporter is running on the host machine or in a naked container.
 
+
 The metric label “label” is used to describe additional attributes specific to each metric.
 This approach helps avoid having too many metric definitions and effectively aggregates metrics that share common characteristics.
 
@@ -125,6 +126,11 @@ This approach helps avoid having too many metric definitions and effectively agg
      - rms
      - Root Mean Square (RMS) value of the power consumed by the device, providing an average power consumption metric over a period of time.
 
+**Note**
+
+The *namespace*, *pod*, and *container* labels exist only in environments where the `Kubernetes PodResource API <https://kubernetes.io/blog/2023/08/23/kubelet-podresources-api-ga/>`_ is available.
+
+**Examples**
 
 The following shows real-world example of the metrics:
 
@@ -187,8 +193,8 @@ For example, if the device npu0 is partitioned into 2 devices (core 0-3, 4-7) an
 
 .. code-block:: sh
 
-  furiosa_npu_hw_temperature{arch="rngd",container="",core="0-7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="ambient",namespace="",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="",uuid="09512C86-0702-4303-8F40-474746474A40"} 50
-  furiosa_npu_hw_temperature{arch="rngd",container="",core="0-7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="peak",namespace="",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="",uuid="09512C86-0702-4303-8F40-474746474A40"} 64.41
+  furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="ambient",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",uuid="09512C86-0702-4303-8F40-474746474A40"} 50
+  furiosa_npu_hw_temperature{arch="rngd",core="0-7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="peak",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",uuid="09512C86-0702-4303-8F40-474746474A40"} 64.41
   furiosa_npu_hw_temperature{arch="rngd",container="furiosa",core="0-3",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="ambient",namespace="default",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 50
   furiosa_npu_hw_temperature{arch="rngd",container="furiosa",core="0-3",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",label="peak",namespace="default",pci_bus_id="0000:c7:00.0",pert_version="2025.1.0+1694e18",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 64.41
 
