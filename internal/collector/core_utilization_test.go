@@ -36,14 +36,14 @@ func TestCoreUtilizationCollector_PostProcessing(t *testing.T) {
 			expected: `
 # HELP furiosa_npu_core_utilization The current core utilization of NPU device
 # TYPE furiosa_npu_core_utilization gauge
-furiosa_npu_core_utilization{arch="rngd",core="0",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="1",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="2",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="3",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="4",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="5",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="6",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
-furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="0",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="1",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="2",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="3",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="4",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="5",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="6",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
+furiosa_npu_core_utilization{arch="rngd",core="7",device="npu0",pci_bus_id="bdf",uuid="uuid"} 90
 
 `,
 		},

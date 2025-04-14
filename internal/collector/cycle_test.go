@@ -38,24 +38,24 @@ func TestCycleCollector_PostProcessing(t *testing.T) {
 			expected: `
 # HELP furiosa_npu_task_execution_cycle The current task execution cycle of NPU device
 # TYPE furiosa_npu_task_execution_cycle counter
-furiosa_npu_task_execution_cycle{arch="rngd",core="0",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="1",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="2",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="3",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="4",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="5",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="6",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
-furiosa_npu_task_execution_cycle{arch="rngd",core="7",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="0",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="1",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="2",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="3",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="4",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="5",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="6",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
+furiosa_npu_task_execution_cycle{arch="rngd",core="7",device="npu0",pci_bus_id="bdf",uuid="uuid"} 1234
 # HELP furiosa_npu_total_cycle_count The current total cycle count of NPU device
 # TYPE furiosa_npu_total_cycle_count counter
-furiosa_npu_total_cycle_count{arch="rngd",core="0",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="1",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="2",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="3",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="4",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="5",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="6",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
-furiosa_npu_total_cycle_count{arch="rngd",core="7",device="npu0",driver_version="",firmware_version="",hostname="",pci_bus_id="bdf",pert_version="",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="0",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="1",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="2",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="3",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="4",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="5",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="6",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
+furiosa_npu_total_cycle_count{arch="rngd",core="7",device="npu0",pci_bus_id="bdf",uuid="uuid"} 5678
 `,
 		},
 	}
