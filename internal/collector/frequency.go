@@ -6,7 +6,6 @@ import (
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -29,10 +28,18 @@ func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory
 }
 
 func (t *coreFrequencyCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_frequency",
 		Help: "The current core frequency of NPU device (MHz)",
-	}, defaultMetricLabels())
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, defaultMetricLabels())
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *coreFrequencyCollector) Collect() error {

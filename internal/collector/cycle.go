@@ -6,7 +6,6 @@ import (
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -32,15 +31,30 @@ func NewCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collec
 }
 
 func (t *cycleCollector) Register() {
-	t.taskExecutionCycleCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
+	taskExecutionCycleOpts := prometheus.CounterOpts{
 		Name: "furiosa_npu_task_execution_cycle",
 		Help: "The current task execution cycle of NPU device",
-	}, defaultMetricLabels())
+	}
 
-	t.totalCycleCountCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
+	t.taskExecutionCycleCounterVec = prometheus.NewCounterVec(taskExecutionCycleOpts, defaultMetricLabels())
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.taskExecutionCycleCounterVec,
+		prometheus.Opts(taskExecutionCycleOpts),
+		prometheus.CounterValue,
+	))
+
+	totalCycleCountOpts := prometheus.CounterOpts{
 		Name: "furiosa_npu_total_cycle_count",
 		Help: "The current total cycle count of NPU device",
-	}, defaultMetricLabels())
+	}
+
+	t.totalCycleCountCounterVec = prometheus.NewCounterVec(totalCycleCountOpts, defaultMetricLabels())
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.totalCycleCountCounterVec,
+		prometheus.Opts(totalCycleCountOpts),
+		prometheus.CounterValue,
+	))
 }
 
 func (t *cycleCollector) Collect() error {

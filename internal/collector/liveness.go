@@ -5,7 +5,6 @@ import (
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -28,10 +27,18 @@ func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory) Col
 }
 
 func (t *livenessCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_alive",
 		Help: "The liveness of NPU device",
-	}, defaultMetricLabels())
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, defaultMetricLabels())
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *livenessCollector) Collect() error {

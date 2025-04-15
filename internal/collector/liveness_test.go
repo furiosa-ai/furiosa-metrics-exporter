@@ -34,7 +34,7 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 				return tc
 			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",container="",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="",pert_version="",pod="",uuid="uuid"} 1
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",uuid="uuid"} 1
 `,
 		},
 		{
@@ -51,7 +51,7 @@ furiosa_npu_alive{arch="rngd",container="",core="0-7",device="npu0",driver_versi
 				return tc
 			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",container="",core="0-7",device="npu0",driver_version="",firmware_version="",hostname="",namespace="",pci_bus_id="",pert_version="",pod="",uuid="uuid"} 0
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",uuid="uuid"} 0
 `,
 		},
 	}
