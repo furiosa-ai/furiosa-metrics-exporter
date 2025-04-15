@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -109,8 +109,8 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "(\n  irate(furiosa_npu_task_execution_cycle{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[3m])\n  /\n  irate(furiosa_npu_total_cycle_count{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[3m])\n) * 100",
-          "legendFormat": "{{hostname}}: {{device}}:{{core}}",
+          "expr": "(\n  irate(furiosa_npu_task_execution_cycle{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\", pod=~\"${pod}\", namespace=~\"${namespace}\", container=~\"${container}\"}[3m])\n  /\n  irate(furiosa_npu_total_cycle_count{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\", pod=~\"${pod}\", namespace=~\"${namespace}\", container=~\"${container}\"}[3m])\n) * 100",
+          "legendFormat": "{{hostname}}-{{namespace}}-{{pod}}-{{container}}: {{device}}:{{core}}",
           "range": true,
           "refId": "A"
         }
@@ -203,9 +203,9 @@
           "datasource": "${datasource}",
           "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_alive{hostname=~\"${hostname}\", device=~\"${device}\"}",
+          "expr": "furiosa_npu_alive{hostname=~\"${hostname}\", device=~\"${device}\", pod=~\"${pod}\", namespace=~\"${namespace}\", container=~\"${container}\"}",
           "interval": "",
-          "legendFormat": "{{hostname}}: {{device}}",
+          "legendFormat": "{{hostname}}-{{namespace}}-{{pod}}-{{container}}: {{device}}",
           "range": true,
           "refId": "A"
         }
@@ -301,8 +301,8 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_core_frequency{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}",
-          "legendFormat": "{{hostname}}: {{device}}:{{core}}",
+          "expr": "furiosa_npu_core_frequency{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\", pod=~\"${pod}\", namespace=~\"${namespace}\", container=~\"${container}\"}",
+          "legendFormat": "{{hostname}}-{{namespace}}-{{pod}}-{{container}}: {{device}}:{{core}}",
           "range": true,
           "refId": "A"
         }
@@ -396,9 +396,9 @@
           "datasource": "${datasource}",
           "editorMode": "code",
           "exemplar": true,
-          "expr": "max by (hostname, device) (furiosa_npu_hw_temperature{hostname=~\"${hostname}\", device=~\"${device}\"})",
+          "expr": "max by (hostname, device, pod, namespace, container) (furiosa_npu_hw_temperature{hostname=~\"${hostname}\", device=~\"${device}\", pod=~\"${pod}\", namespace=~\"${namespace}\", container=~\"${container}\"})",
           "interval": "",
-          "legendFormat": "{{hostname}}: {{device}}",
+          "legendFormat": "{{hostname}}-{{namespace}}-{{pod}}-{{container}}: {{device}}",
           "range": true,
           "refId": "A"
         }
@@ -490,9 +490,9 @@
           "datasource": "${datasource}",
           "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_hw_power{hostname=~\"${hostname}\", device=~\"${device}\"}",
+          "expr": "furiosa_npu_hw_power{hostname=~\"${hostname}\", device=~\"${device}\", pod=~\"${pod}\", namespace=~\"${namespace}\", container=~\"${container}\"}",
           "interval": "",
-          "legendFormat": "{{hostname}}: {{device}}",
+          "legendFormat": "{{hostname}}-{{namespace}}-{{pod}}-{{container}}: {{device}}",
           "range": true,
           "refId": "A"
         }
@@ -566,6 +566,73 @@
       {
         "current": {
           "text": "All",
+          "value": "$__all"
+        },
+        "datasource": "${datasource}",
+        "definition": "label_values(furiosa_npu_alive,pod)",
+        "includeAll": true,
+        "label": "pod",
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(furiosa_npu_alive,pod)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "${datasource}",
+        "definition": "label_values(furiosa_npu_alive,namespace)",
+        "includeAll": true,
+        "label": "namespace",
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(furiosa_npu_alive,namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "${datasource}",
+        "definition": "label_values(furiosa_npu_alive,container)",
+        "includeAll": true,
+        "label": "container",
+        "multi": true,
+        "name": "container",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(furiosa_npu_alive,container)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
           "value": [
             "$__all"
           ]
@@ -595,5 +662,5 @@
   "timezone": "browser",
   "title": "NPU Dashboard",
   "uid": "cdq1o5br22134a",
-  "version": 3
+  "version": 5
 }
