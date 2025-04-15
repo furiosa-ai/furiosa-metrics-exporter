@@ -36,11 +36,11 @@ func (c *LabelFilterCollector) Collect(ch chan<- prometheus.Metric) {
 			continue
 		}
 
-		filteredLabels := filterEmptyLabels(m.Label)
+		filtered := filterEmptyLabels(m.Label)
 		newDesc := prometheus.NewDesc(
 			prometheus.BuildFQName(c.opts.Namespace, c.opts.Subsystem, c.opts.Name),
 			c.opts.Help,
-			filteredLabels.keys,
+			filtered.keys,
 			c.opts.ConstLabels,
 		)
 
@@ -61,7 +61,7 @@ func (c *LabelFilterCollector) Collect(ch chan<- prometheus.Metric) {
 			newDesc,
 			c.metricType,
 			value,
-			filteredLabels.values...,
+			filtered.values...,
 		)
 
 		if err == nil {
