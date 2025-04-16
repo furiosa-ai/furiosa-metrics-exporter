@@ -57,7 +57,7 @@ The following table shows the available collectors and metrics:
      - furiosa_npu_core_frequency
      - gauge
      - arch, core, device, uuid, pci_bud_id, firmware_version, pert_version, driver_version, hostname, namespace, pod, container
-     - The core utilization of the Furiosa NPU device.
+     - The core frequency of the Furiosa NPU device.
    * - Cycle Count
      - furiosa_npu_total_cycle_count
      - counter
