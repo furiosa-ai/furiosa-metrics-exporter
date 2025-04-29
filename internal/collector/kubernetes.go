@@ -257,7 +257,7 @@ func listPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse,
 
 	resp, err := client.List(ctx, &podResourcesAPI.ListPodResourcesRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pod resources; err: %w", err)
+		return nil, fmt.Errorf("failed to get pod resources; err: %w\n", err)
 	}
 
 	return resp, nil
