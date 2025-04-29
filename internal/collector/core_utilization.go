@@ -16,14 +16,16 @@ type coreUtilizationCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewCoreUtilizationCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewCoreUtilizationCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &coreUtilizationCollector{
 		devices:       devices,
 		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
@@ -80,7 +82,7 @@ func (t *coreUtilizationCollector) Collect() error {
 }
 
 func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
-	transformed := TransformDeviceMetrics(metrics, true)
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, true)
 	t.gaugeVec.Reset()
 
 	for _, metric := range transformed {

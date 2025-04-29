@@ -2,7 +2,6 @@ package collector
 
 import (
 	"errors"
-
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -11,6 +10,7 @@ type temperatureCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 const (
@@ -20,10 +20,11 @@ const (
 
 var _ Collector = (*temperatureCollector)(nil)
 
-func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &temperatureCollector{
 		devices:       devices,
 		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
@@ -76,7 +77,7 @@ func (t *temperatureCollector) Collect() error {
 }
 
 func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
-	transformed := TransformDeviceMetrics(metrics, false)
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
 
 	for _, metric := range transformed {

@@ -38,35 +38,69 @@ type coreToPodInfo map[int]podInfo
 
 // coreWiseCache maps uuid to core to pod name for core wise metrics
 type coreWiseCache map[string]coreToPodInfo
-type podInfoMapCache struct {
+
+type KubeResourcesMapper interface {
+	TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) MetricContainer
+}
+
+type kubeResourcesMapper struct {
+	enabled bool
 	sync.RWMutex
 	deviceWiseCache
 	coreWiseCache
 }
 
-var podInfoCache = &podInfoMapCache{
-	deviceWiseCache: make(deviceWiseCache),
+var _ KubeResourcesMapper = (*kubeResourcesMapper)(nil)
+
+func NewKubeResourcesMapper(ctx context.Context, enabled bool) (KubeResourcesMapper, chan<- struct{}, error) {
+	syncChan := make(chan struct{}, 1)
+
+	mapper := &kubeResourcesMapper{
+		enabled:         enabled,
+		deviceWiseCache: make(deviceWiseCache),
+	}
+
+	go func() {
+		for {
+			select {
+			case <-syncChan:
+				mapper.syncPodInfoCache()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return mapper, syncChan, nil
 }
 
-func SyncPodInfoCache() {
+func (k *kubeResourcesMapper) syncPodInfoCache() {
+	if !k.enabled {
+		return
+	}
+
 	deviceWise, coreWise, err := buildMultiWiseCache()
 	if err != nil {
 		fmt.Printf("failed to get kubernetes pod information cache: %v", err)
 		return
 	}
 
-	podInfoCache.Lock()
-	defer podInfoCache.Unlock()
+	k.Lock()
+	defer k.Unlock()
 
-	podInfoCache.deviceWiseCache = deviceWise
-	podInfoCache.coreWiseCache = coreWise
+	k.deviceWiseCache = deviceWise
+	k.coreWiseCache = coreWise
 }
 
-func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) MetricContainer {
+func (k *kubeResourcesMapper) TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) MetricContainer {
+	if !k.enabled {
+		return metrics
+	}
+
 	transformed := make(MetricContainer, 0)
 
-	podInfoCache.RLock()
-	defer podInfoCache.RUnlock()
+	k.RLock()
+	defer k.RUnlock()
 
 	for _, metric := range metrics {
 		uuidValue, uuidFound := metric[uuid].(string)
@@ -89,7 +123,7 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 				continue
 			}
 
-			podInformation, found := podInfoCache.coreWiseCache[uuidValue][coreIdx]
+			podInformation, found := k.coreWiseCache[uuidValue][coreIdx]
 			if !found {
 				transformed = append(transformed, metric)
 				continue
@@ -103,7 +137,7 @@ func TransformDeviceMetrics(metrics MetricContainer, coreWiseMetric bool) Metric
 
 		} else {
 			// handle device wise metrics
-			podInfoSlice, podInfoSliceFound := podInfoCache.deviceWiseCache[uuidValue]
+			podInfoSlice, podInfoSliceFound := k.deviceWiseCache[uuidValue]
 			if !podInfoSliceFound {
 				transformed = append(transformed, metric)
 				continue

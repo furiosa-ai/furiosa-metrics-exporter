@@ -16,6 +16,7 @@ const (
 type cycleCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
+	kubeResMapper KubeResourcesMapper
 
 	taskExecutionCycleCounterVec *prometheus.CounterVec
 	totalCycleCountCounterVec    *prometheus.CounterVec
@@ -23,10 +24,11 @@ type cycleCollector struct {
 
 var _ Collector = (*cycleCollector)(nil)
 
-func NewCycleCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewCycleCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &cycleCollector{
 		devices:       devices,
 		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
@@ -101,7 +103,7 @@ func (t *cycleCollector) postProcess(metrics MetricContainer) error {
 	t.taskExecutionCycleCounterVec.Reset()
 	t.totalCycleCountCounterVec.Reset()
 
-	transformed := TransformDeviceMetrics(metrics, true)
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, true)
 	for _, metric := range transformed {
 		if value, ok := metric[taskExecutionCycle]; ok {
 			t.taskExecutionCycleCounterVec.With(prometheus.Labels{

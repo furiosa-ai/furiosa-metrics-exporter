@@ -9,9 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newFakeTempCollector() Collector {
+	return &temperatureCollector{
+		devices:       nil,
+		metricFactory: nil,
+		kubeResMapper: NewFakeKubeResourcesMapper(),
+	}
+}
+
 func TestTempCollector_PostProcessing(t *testing.T) {
-	c := &temperatureCollector{}
-	c.Register()
+	collector := newFakeTempCollector()
+	collector.Register()
 
 	tc := MetricContainer{}
 	metric := newMetric()
@@ -22,7 +30,7 @@ func TestTempCollector_PostProcessing(t *testing.T) {
 	metric[ambient] = float64(35)
 	metric[peak] = float64(39)
 	tc = append(tc, metric)
-	err := c.postProcess(tc)
+	err := collector.postProcess(tc)
 	assert.NoError(t, err)
 
 	expected := `
