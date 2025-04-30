@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,6 +40,12 @@ func NewCommand() *cobra.Command {
 				cfg.SetNodeName(nodeName)
 			}
 
+			if kubeResourcesLabel, err := cmd.Flags().GetBool("kube-resources-label"); err != nil {
+				return err
+			} else {
+				cfg.SetKubeResourcesLabel(kubeResourcesLabel)
+			}
+
 			return Run(cmd.Context(), cfg)
 		},
 	}
@@ -46,6 +53,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().Int("port", 0, "[Required] Port number used for metrics server")
 	cmd.Flags().Int("interval", 0, "[Required] Collection interval value in second")
 	cmd.Flags().String("node-name", "", "Node name of the current execution environment")
+	cmd.Flags().Bool("kube-resources-label", false, "Enable kubernetes resources label injection")
 
 	if err := cmd.MarkFlagRequired("port"); err != nil {
 		panic(err)
@@ -77,7 +85,6 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	}()
 
 	err := smi.Init()
-
 	if err != nil {
 		return err
 	}
@@ -87,9 +94,17 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
+	driverInfo, err := smi.DriverInfo()
+	if err != nil {
+		return err
+	}
+
+	// Prepare Metric Factory
+	metricFactory := collector.NewMetricFactory(cfg.NodeName, driverInfo.String())
+
 	// Create Exporter
 	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(logger, cfg, devices, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(ctx, logger, cfg, devices, metricFactory, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err

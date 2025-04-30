@@ -2,16 +2,15 @@ package collector
 
 import (
 	"errors"
-
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type temperatureCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	metricFactory MetricFactory
+	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 const (
@@ -21,26 +20,27 @@ const (
 
 var _ Collector = (*temperatureCollector)(nil)
 
-func NewTemperatureCollector(devices []smi.Device, nodeName string) Collector {
+func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &temperatureCollector{
-		devices:  devices,
-		nodeName: nodeName,
+		devices:       devices,
+		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
 func (t *temperatureCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
 		Help: "The current temperature of NPU device",
-	},
-		[]string{
-			arch,
-			core,
-			device,
-			kubernetesNodeName,
-			label,
-			uuid,
-		})
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, append(defaultMetricLabels(), label))
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *temperatureCollector) Collect() error {
@@ -48,19 +48,11 @@ func (t *temperatureCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric := Metric{}
-
-		info, err := getDeviceInfo(d)
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		metric[arch] = info.arch
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[core] = info.coreLabel
-		metric[kubernetesNodeName] = t.nodeName
 
 		deviceTemperature, err := d.DeviceTemperature()
 		if err != nil {
@@ -85,29 +77,43 @@ func (t *temperatureCollector) Collect() error {
 }
 
 func (t *temperatureCollector) postProcess(metrics MetricContainer) error {
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[ambient]; ok {
-
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              ambient,
-				uuid:               metric[uuid].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				label:               ambient,
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(value.(float64))
 		}
 
 		if value, ok := metric[peak]; ok {
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				label:              peak,
-				uuid:               metric[uuid].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				label:               peak,
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(value.(float64))
 		}
 	}

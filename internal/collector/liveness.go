@@ -2,10 +2,8 @@ package collector
 
 import (
 	"errors"
-
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -13,32 +11,35 @@ const (
 )
 
 type livenessCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	metricFactory MetricFactory
+	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 var _ Collector = (*livenessCollector)(nil)
 
-func NewLivenessCollector(devices []smi.Device, nodeName string) Collector {
+func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &livenessCollector{
-		devices:  devices,
-		nodeName: nodeName,
+		devices:       devices,
+		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
 func (t *livenessCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_alive",
 		Help: "The liveness of NPU device",
-	},
-		[]string{
-			arch,
-			core,
-			device,
-			kubernetesNodeName,
-			uuid,
-		})
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, defaultMetricLabels())
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *livenessCollector) Collect() error {
@@ -46,19 +47,11 @@ func (t *livenessCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric := Metric{}
-
-		info, err := getDeviceInfo(d)
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		metric[arch] = info.arch
-		metric[core] = info.coreLabel
-		metric[device] = info.device
-		metric[uuid] = info.uuid
-		metric[kubernetesNodeName] = t.nodeName
 
 		value, err := d.Liveness()
 		if err != nil {
@@ -82,9 +75,10 @@ func (t *livenessCollector) Collect() error {
 }
 
 func (t *livenessCollector) postProcess(metrics MetricContainer) error {
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[liveness]; ok {
 			var alive float64
 			if value.(bool) {
@@ -94,12 +88,20 @@ func (t *livenessCollector) postProcess(metrics MetricContainer) error {
 			}
 
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				uuid:               metric[uuid].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(alive)
+
 		}
 	}
 

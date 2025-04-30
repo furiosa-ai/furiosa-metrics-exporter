@@ -14,6 +14,14 @@ const head = `
 # TYPE furiosa_npu_alive gauge
 `
 
+func newFakeLivenessCollector() Collector {
+	return &livenessCollector{
+		devices:       nil,
+		metricFactory: nil,
+		kubeResMapper: NewFakeKubeResourcesMapper(),
+	}
+}
+
 func TestLivenessCollector_PostProcessing(t *testing.T) {
 	tests := []struct {
 		description string
@@ -22,43 +30,45 @@ func TestLivenessCollector_PostProcessing(t *testing.T) {
 	}{
 		{
 			description: "liveness is true",
-			source: MetricContainer{
-				{
-					arch:               "rngd",
-					core:               "0-7",
-					device:             "npu0",
-					uuid:               "uuid",
-					kubernetesNodeName: "node",
-					liveness:           true,
-				},
-			},
+			source: func() MetricContainer {
+				tc := MetricContainer{}
+				metric := newMetric()
+				metric[arch] = "rngd"
+				metric[core] = "0-7"
+				metric[device] = "npu0"
+				metric[uuid] = "uuid"
+				metric[liveness] = true
+				tc = append(tc, metric)
+				return tc
+			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 1
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",uuid="uuid"} 1
 `,
 		},
 		{
 			description: "liveness is false",
-			source: MetricContainer{
-				{
-					arch:               "rngd",
-					core:               "0-7",
-					device:             "npu0",
-					uuid:               "uuid",
-					kubernetesNodeName: "node",
-					liveness:           false,
-				},
-			},
+			source: func() MetricContainer {
+				tc := MetricContainer{}
+				metric := newMetric()
+				metric[arch] = "rngd"
+				metric[core] = "0-7"
+				metric[device] = "npu0"
+				metric[uuid] = "uuid"
+				metric[liveness] = false
+				tc = append(tc, metric)
+				return tc
+			}(),
 			expected: `
-furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",kubernetes_node_name="node",uuid="uuid"} 0
+furiosa_npu_alive{arch="rngd",core="0-7",device="npu0",uuid="uuid"} 0
 `,
 		},
 	}
 
-	p := &livenessCollector{}
-	p.Register()
+	collector := newFakeLivenessCollector()
+	collector.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			err := p.postProcess(tc.source)
+			err := collector.postProcess(tc.source)
 			assert.NoError(t, err)
 
 			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_alive")

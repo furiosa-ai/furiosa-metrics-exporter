@@ -10,9 +10,10 @@ const (
 )
 
 type Config struct {
-	Port     int    `yaml:"port"`
-	Interval int    `yaml:"interval"`
-	NodeName string `yaml:"nodeName"`
+	Port               int    `yaml:"port"`
+	Interval           int    `yaml:"interval"`
+	NodeName           string `yaml:"nodeName"`
+	KubeResourcesLabel bool   `yaml:"kubeResourcesLabel"`
 }
 
 func (c *Config) SetPort(port int) {
@@ -27,12 +28,17 @@ func (c *Config) SetNodeName(nodeName string) {
 	c.NodeName = nodeName
 }
 
+func (c *Config) SetKubeResourcesLabel(kubeResourcesLabel bool) {
+	c.KubeResourcesLabel = kubeResourcesLabel
+}
+
 func NewDefaultConfig() *Config {
 	return &Config{
 		Port:     defaultPort,
 		Interval: defaultInterval,
 
 		// Set NodeName from `NODE_NAME` env. If not set, leave it empty.
-		NodeName: os.Getenv("NODE_NAME"),
+		NodeName:           os.Getenv("NODE_NAME"),
+		KubeResourcesLabel: false,
 	}
 }

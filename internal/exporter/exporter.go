@@ -3,6 +3,7 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"net/http"
 	"time"
 
@@ -18,10 +19,18 @@ type Exporter struct {
 	collectInterval int
 	server          *http.Server
 	errChan         chan error
+	kubeResSyncChan chan<- struct{}
 	pipeline        *pipeline.Pipeline
 }
 
-func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi.Device, errChan chan error) (*Exporter, error) {
+func NewGenericExporter(ctx context.Context, logger zerolog.Logger, cfg *config.Config, devices []smi.Device, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
+	kubeResMapper, kubeResSyncChan, err := collector.NewKubeResourcesMapper(ctx, cfg.KubeResourcesLabel)
+	if err != nil {
+		return nil, err
+	}
+
+	newDefaultPipeline := pipeline.NewRegisteredPipeline(devices, metricFactory, kubeResMapper)
+
 	exporter := Exporter{
 		logger:          logger,
 		collectInterval: cfg.Interval,
@@ -35,8 +44,9 @@ func NewGenericExporter(logger zerolog.Logger, cfg *config.Config, devices []smi
 				return mux
 			}(),
 		},
-		errChan:  errChan,
-		pipeline: pipeline.NewRegisteredPipeline(devices, cfg.NodeName),
+		errChan:         errChan,
+		kubeResSyncChan: kubeResSyncChan,
+		pipeline:        newDefaultPipeline,
 	}
 
 	return &exporter, nil
@@ -58,10 +68,13 @@ func (e *Exporter) Start(ctx context.Context) {
 		for {
 			select {
 			case <-tick.C:
+				// trigger kubelet pod resources api
+				e.kubeResSyncChan <- struct{}{}
+
+				// collect metrics
 				for _, err := range e.pipeline.Collect() {
 					e.logger.Err(err).Msg(fmt.Sprintf("error %v received from pipeline collector", err))
 				}
-
 			case <-ctx.Done():
 				return
 			}

@@ -18,8 +18,106 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 3,
   "links": [],
   "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "(\n  irate(furiosa_npu_task_execution_cycle{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[3m])\n  /\n  irate(furiosa_npu_total_cycle_count{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[3m])\n) * 100",
+          "legendFormat": "{{hostname}}: {{device}}:{{core}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Npu Core Utilization",
+      "type": "timeseries"
+    },
     {
       "datasource": "${datasource}",
       "fieldConfig": {
@@ -67,8 +165,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -82,7 +179,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 0
       },
       "id": 6,
@@ -94,19 +191,21 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "${datasource}",
           "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_alive{kubernetes_node_name=~\"${node}\", device=~\"${device}\"}",
+          "expr": "furiosa_npu_alive{hostname=~\"${hostname}\", device=~\"${device}\"}",
           "interval": "",
-          "legendFormat": "{{kubernetes_node_name}}: {{device}}",
+          "legendFormat": "{{hostname}}: {{device}}",
           "range": true,
           "refId": "A"
         }
@@ -115,7 +214,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "${datasource}",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -155,14 +257,11 @@
             }
           },
           "mappings": [],
-          "max": 10,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -176,10 +275,10 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 8
       },
-      "id": 2,
+      "id": 14,
       "options": {
         "legend": {
           "calcs": [],
@@ -188,22 +287,27 @@
           "showLegend": true
         },
         "tooltip": {
-          "maxHeight": 600,
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "datasource": "${datasource}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_error{label=\"device_error\", kubernetes_node_name=~\"${node}\", device=~\"${device}\"}",
-          "interval": "",
-          "legendFormat": "{{kubernetes_node_name}}: {{device}}",
+          "expr": "furiosa_npu_core_frequency{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}",
+          "legendFormat": "{{hostname}}: {{device}}:{{core}}",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Device Error",
+      "title": "Core Frequency",
       "type": "timeseries"
     },
     {
@@ -253,8 +357,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -269,7 +372,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 8
       },
       "id": 10,
@@ -281,19 +384,21 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "${datasource}",
           "editorMode": "code",
           "exemplar": true,
-          "expr": "max by (kubernetes_node_name, device) (furiosa_npu_hw_temperature{kubernetes_node_name=~\"${node}\", device=~\"${device}\"})",
+          "expr": "max by (hostname, device) (furiosa_npu_hw_temperature{hostname=~\"${hostname}\", device=~\"${device}\"})",
           "interval": "",
-          "legendFormat": "{{kubernetes_node_name}}:{{device}}",
+          "legendFormat": "{{hostname}}: {{device}}",
           "range": true,
           "refId": "A"
         }
@@ -342,14 +447,11 @@
             }
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -357,17 +459,17 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "watt"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 16
       },
-      "id": 12,
+      "id": 15,
       "options": {
         "legend": {
           "calcs": [],
@@ -376,83 +478,77 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": "${datasource}",
           "editorMode": "code",
           "exemplar": true,
-          "expr": "furiosa_npu_core_utilization{kubernetes_node_name=~\"${node}\", device=~\"${device}\", core=~\"${core}\"}",
+          "expr": "furiosa_npu_hw_power{hostname=~\"${hostname}\", device=~\"${device}\"}",
           "interval": "",
-          "legendFormat": "{{kubernetes_node_name}}: {{device}}:{{core}}",
+          "legendFormat": "{{hostname}}: {{device}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "NPU Core Utilization",
+      "title": "Device Power Consumption",
       "type": "timeseries"
     }
   ],
-  "schemaVersion": 39,
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
-        "hide": 0,
+        "current": {
+          "text": "prometheus",
+          "value": "fehoavgkka8zkc"
+        },
         "includeAll": false,
         "label": "datasource",
-        "multi": false,
         "name": "datasource",
         "options": [],
         "query": "prometheus",
-        "queryValue": "",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "current": {
-          "selected": false,
-          "text": "ms03-ceo-008",
-          "value": "ms03-ceo-008"
+          "text": "rngd-tsvr-010",
+          "value": "rngd-tsvr-010"
         },
         "datasource": "${datasource}",
-        "definition": "label_values(furiosa_npu_alive,kubernetes_node_name)",
-        "hide": 0,
+        "definition": "label_values(furiosa_npu_alive,hostname)",
         "includeAll": false,
-        "multi": false,
-        "name": "node",
+        "name": "hostname",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(furiosa_npu_alive,kubernetes_node_name)",
+          "query": "label_values(furiosa_npu_alive,hostname)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
-        "allValue": "",
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
+          "text": "All",
           "value": [
             "$__all"
           ]
         },
         "datasource": "${datasource}",
         "definition": "label_values(furiosa_npu_alive,device)",
-        "hide": 0,
         "includeAll": true,
         "label": "device",
         "multi": true,
@@ -465,26 +561,18 @@
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
-        "allValue": "",
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
+          "text": "All",
           "value": [
             "$__all"
           ]
         },
         "datasource": "${datasource}",
         "definition": "label_values(furiosa_npu_core_utilization,core)",
-        "hide": 0,
         "includeAll": true,
-        "label": "",
         "multi": true,
         "name": "core",
         "options": [],
@@ -495,19 +583,17 @@
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "NPU Dashboard",
   "uid": "cdq1o5br22134a",
-  "weekStart": ""
+  "version": 3
 }

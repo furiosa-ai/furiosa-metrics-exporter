@@ -2,11 +2,10 @@ package collector
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
@@ -14,32 +13,35 @@ const (
 )
 
 type coreUtilizationCollector struct {
-	devices  []smi.Device
-	gaugeVec *prometheus.GaugeVec
-	nodeName string
+	devices       []smi.Device
+	metricFactory MetricFactory
+	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewCoreUtilizationCollector(devices []smi.Device, nodeName string) Collector {
+func NewCoreUtilizationCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &coreUtilizationCollector{
-		devices:  devices,
-		nodeName: nodeName,
+		devices:       devices,
+		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
 func (t *coreUtilizationCollector) Register() {
-	t.gaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_utilization",
 		Help: "The current core utilization of NPU device",
-	},
-		[]string{
-			arch,
-			device,
-			core,
-			kubernetesNodeName,
-			uuid,
-		})
+	}
+
+	t.gaugeVec = prometheus.NewGaugeVec(opts, defaultMetricLabels())
+
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.gaugeVec,
+		prometheus.Opts(opts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *coreUtilizationCollector) Collect() error {
@@ -47,7 +49,7 @@ func (t *coreUtilizationCollector) Collect() error {
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		info, err := getDeviceInfo(d)
+		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -61,15 +63,10 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		utilization := coreUtilization.PeUtilization()
 		for _, pe := range utilization {
-			metric := Metric{
-				arch:               info.arch,
-				core:               fmt.Sprintf("%d", pe.Core()),
-				device:             info.device,
-				kubernetesNodeName: t.nodeName,
-				uuid:               info.uuid,
-				peUtilization:      pe.PeUsagePercentage(),
-			}
-			metricContainer = append(metricContainer, metric)
+			duplicated := deepCopyMetric(metric)
+			duplicated[core] = strconv.Itoa(int(pe.Core()))
+			duplicated[peUtilization] = pe.PeUsagePercentage()
+			metricContainer = append(metricContainer, duplicated)
 		}
 	}
 
@@ -85,16 +82,24 @@ func (t *coreUtilizationCollector) Collect() error {
 }
 
 func (t *coreUtilizationCollector) postProcess(metrics MetricContainer) error {
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, true)
 	t.gaugeVec.Reset()
 
-	for _, metric := range metrics {
+	for _, metric := range transformed {
 		if value, ok := metric[peUtilization]; ok {
 			t.gaugeVec.With(prometheus.Labels{
-				arch:               metric[arch].(string),
-				core:               metric[core].(string),
-				device:             metric[device].(string),
-				kubernetesNodeName: metric[kubernetesNodeName].(string),
-				uuid:               metric[uuid].(string),
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				pertVersion:         metric[pertVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(value.(float64))
 		}
 	}

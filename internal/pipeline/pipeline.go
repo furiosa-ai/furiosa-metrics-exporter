@@ -11,14 +11,15 @@ type Pipeline struct {
 	collectors []collector.Collector
 }
 
-func NewRegisteredPipeline(devices []smi.Device, nodeName string) *Pipeline {
+func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricFactory, kubeResMapper collector.KubeResourcesMapper) *Pipeline {
 	p := Pipeline{
 		collectors: []collector.Collector{
-			collector.NewTemperatureCollector(devices, nodeName),
-			collector.NewPowerCollector(devices, nodeName),
-			collector.NewLivenessCollector(devices, nodeName),
-			collector.NewCoreUtilizationCollector(devices, nodeName),
-			//collector.NewMemoryCollector(devices, nodeName),
+			collector.NewTemperatureCollector(devices, metricFactory, kubeResMapper),
+			collector.NewPowerCollector(devices, metricFactory, kubeResMapper),
+			collector.NewLivenessCollector(devices, metricFactory, kubeResMapper),
+			collector.NewCoreUtilizationCollector(devices, metricFactory, kubeResMapper),
+			collector.NewCoreFrequencyCollector(devices, metricFactory, kubeResMapper),
+			collector.NewCycleCollector(devices, metricFactory, kubeResMapper),
 		},
 	}
 
@@ -51,6 +52,5 @@ func (p *Pipeline) Collect() []error {
 			results = append(results, errors[i])
 		}
 	}
-
 	return results
 }
