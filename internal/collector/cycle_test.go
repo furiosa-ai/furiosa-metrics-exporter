@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newFakeCycleCollector() Collector {
+	return &cycleCollector{
+		devices:       nil,
+		metricFactory: nil,
+		kubeResMapper: NewFakeKubeResourcesMapper(),
+	}
+}
+
 func TestCycleCollector_PostProcessing(t *testing.T) {
 	tests := []struct {
 		description string
@@ -60,11 +68,11 @@ furiosa_npu_total_cycle_count{arch="rngd",core="7",device="npu0",pci_bus_id="bdf
 		},
 	}
 
-	sut := &cycleCollector{}
-	sut.Register()
+	collector := newFakeCycleCollector()
+	collector.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			err := sut.postProcess(tc.source)
+			err := collector.postProcess(tc.source)
 			assert.Nil(t, err)
 
 			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_task_execution_cycle")

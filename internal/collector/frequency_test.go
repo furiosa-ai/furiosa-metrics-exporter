@@ -11,6 +11,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
+func newFakeCoreFrequencyCollector() Collector {
+	return &coreFrequencyCollector{
+		devices:       nil,
+		metricFactory: nil,
+		kubeResMapper: NewFakeKubeResourcesMapper(),
+	}
+}
+
 func TestCoreFrequencyCollector_PostProcessing(t *testing.T) {
 	tests := []struct {
 		description string
@@ -48,11 +56,11 @@ furiosa_npu_core_frequency{arch="rngd",core="7",device="npu0",pci_bus_id="bdf",u
 		},
 	}
 
-	cu := &coreFrequencyCollector{}
-	cu.Register()
+	collector := newFakeCoreFrequencyCollector()
+	collector.Register()
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			err := cu.postProcess(tc.source)
+			err := collector.postProcess(tc.source)
 			assert.NoError(t, err)
 
 			err = testutil.GatherAndCompare(prometheus.DefaultGatherer, strings.NewReader(head+tc.expected), "furiosa_npu_core_frequency")

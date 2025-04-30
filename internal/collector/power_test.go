@@ -9,9 +9,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newFakePowerCollector() Collector {
+	return &powerCollector{
+		devices:       nil,
+		metricFactory: nil,
+		kubeResMapper: NewFakeKubeResourcesMapper(),
+	}
+}
+
 func TestPowerCollector_PostProcessing(t *testing.T) {
-	p := &powerCollector{}
-	p.Register()
+	collector := newFakePowerCollector()
+	collector.Register()
 
 	tc := MetricContainer{}
 	metric := newMetric()
@@ -25,7 +33,7 @@ func TestPowerCollector_PostProcessing(t *testing.T) {
 
 	tc = append(tc, metric)
 
-	err := p.postProcess(tc)
+	err := collector.postProcess(tc)
 	assert.NoError(t, err)
 
 	expected := `

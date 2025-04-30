@@ -2,7 +2,6 @@ package collector
 
 import (
 	"errors"
-
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -15,14 +14,16 @@ type livenessCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 var _ Collector = (*livenessCollector)(nil)
 
-func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewLivenessCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &livenessCollector{
 		devices:       devices,
 		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
@@ -74,7 +75,7 @@ func (t *livenessCollector) Collect() error {
 }
 
 func (t *livenessCollector) postProcess(metrics MetricContainer) error {
-	transformed := TransformDeviceMetrics(metrics, false)
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, false)
 	t.gaugeVec.Reset()
 
 	for _, metric := range transformed {

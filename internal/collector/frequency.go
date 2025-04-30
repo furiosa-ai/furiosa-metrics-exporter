@@ -16,14 +16,16 @@ type coreFrequencyCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
+	kubeResMapper KubeResourcesMapper
 }
 
 var _ Collector = (*coreFrequencyCollector)(nil)
 
-func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory) Collector {
+func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &coreFrequencyCollector{
 		devices:       devices,
 		metricFactory: metricFactory,
+		kubeResMapper: kubeResMapper,
 	}
 }
 
@@ -80,7 +82,7 @@ func (t *coreFrequencyCollector) Collect() error {
 }
 
 func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
-	transformed := TransformDeviceMetrics(metrics, true)
+	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, true)
 	t.gaugeVec.Reset()
 
 	for _, metric := range transformed {
