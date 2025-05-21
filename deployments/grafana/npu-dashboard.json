@@ -109,7 +109,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "(\n  irate(furiosa_npu_task_execution_cycle{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[3m])\n  /\n  irate(furiosa_npu_total_cycle_count{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[3m])\n) * 100",
+          "expr": "(\n  rate(furiosa_npu_task_execution_cycle{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[1m])\n  /\n  rate(furiosa_npu_total_cycle_count{hostname=~\"${hostname}\", device=~\"${device}\", core=~\"${core}\"}[1m])\n) * 100",
           "legendFormat": "{{hostname}}: {{device}}:{{core}}",
           "range": true,
           "refId": "A"
