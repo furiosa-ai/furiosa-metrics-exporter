@@ -246,7 +246,9 @@ func connectToServer() (*grpc.ClientConn, func(), error) {
 		return nil, func() {}, fmt.Errorf("failed to connect to '%s'; err: %w", k8sSocket, err)
 	}
 
-	return conn, func() { conn.Close() }, nil
+	return conn, func() {
+		_ = conn.Close()
+	}, nil
 }
 
 func listPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse, error) {
@@ -257,7 +259,7 @@ func listPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse,
 
 	resp, err := client.List(ctx, &podResourcesAPI.ListPodResourcesRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pod resources; err: %w\n", err)
+		return nil, fmt.Errorf("failed to get pod resources; err: %w", err)
 	}
 
 	return resp, nil
