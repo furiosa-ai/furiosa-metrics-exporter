@@ -3,7 +3,7 @@ module github.com/furiosa-ai/furiosa-metrics-exporter
 go 1.24.2
 
 require (
-	github.com/furiosa-ai/furiosa-smi-go v0.3.3
+	github.com/furiosa-ai/furiosa-smi-go v0.4.3
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
 	github.com/rs/zerolog v1.33.0
