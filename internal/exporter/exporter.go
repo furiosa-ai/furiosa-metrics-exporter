@@ -23,13 +23,13 @@ type Exporter struct {
 	pipeline        *pipeline.Pipeline
 }
 
-func NewGenericExporter(ctx context.Context, logger zerolog.Logger, cfg *config.Config, devices []smi.Device, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
+func NewGenericExporter(ctx context.Context, logger zerolog.Logger, cfg *config.Config, devices []smi.Device, observer smi.Observer, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
 	kubeResMapper, kubeResSyncChan, err := collector.NewKubeResourcesMapper(ctx, cfg.KubeResourcesLabel)
 	if err != nil {
 		return nil, err
 	}
 
-	newDefaultPipeline := pipeline.NewRegisteredPipeline(devices, metricFactory, kubeResMapper)
+	newDefaultPipeline := pipeline.NewRegisteredPipeline(devices, observer, metricFactory, kubeResMapper)
 
 	exporter := Exporter{
 		logger:          logger,

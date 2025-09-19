@@ -14,6 +14,7 @@ const (
 
 type coreUtilizationCollector struct {
 	devices       []smi.Device
+	observer      smi.Observer
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 	kubeResMapper KubeResourcesMapper
@@ -21,9 +22,10 @@ type coreUtilizationCollector struct {
 
 var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewCoreUtilizationCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+func NewCoreUtilizationCollector(devices []smi.Device, observer smi.Observer, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &coreUtilizationCollector{
 		devices:       devices,
+		observer:      observer,
 		metricFactory: metricFactory,
 		kubeResMapper: kubeResMapper,
 	}
@@ -55,17 +57,16 @@ func (t *coreUtilizationCollector) Collect() error {
 			continue
 		}
 
-		coreUtilization, err := d.CoreUtilization()
+		coreUtilizationSlice, err := t.observer.GetCoreUtilization(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		utilization := coreUtilization.PeUtilization()
-		for _, pe := range utilization {
+		for _, coreUtilization := range coreUtilizationSlice {
 			duplicated := deepCopyMetric(metric)
-			duplicated[core] = strconv.Itoa(int(pe.Core()))
-			duplicated[peUtilization] = pe.PeUsagePercentage()
+			duplicated[core] = strconv.Itoa(int(coreUtilization.Core))
+			duplicated[peUtilization] = coreUtilization.PeUsagePercentage
 			metricContainer = append(metricContainer, duplicated)
 		}
 	}
