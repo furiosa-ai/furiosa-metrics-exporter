@@ -37,7 +37,6 @@ func (m *metricFactory) NewDeviceWiseMetric(d smi.Device) (Metric, error) {
 	metric[uuid] = info.uuid
 	metric[bdf] = info.bdf
 	metric[firmwareVersion] = info.firmwareVersion
-	metric[pertVersion] = info.pertVersion
 	metric[driverVersion] = m.driverVersion
 	metric[hostname] = m.nodeName
 
@@ -52,7 +51,6 @@ type deviceInfo struct {
 	coreLabel       string
 	bdf             string
 	firmwareVersion string
-	pertVersion     string
 }
 
 func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
@@ -96,7 +94,6 @@ func getDeviceInfo(device smi.Device) (*deviceInfo, error) {
 		coreLabel:       coreLabel,
 		bdf:             info.BDF(),
 		firmwareVersion: info.FirmwareVersion().String(),
-		pertVersion:     info.PertVersion().String(),
 	}, nil
 }
 
@@ -108,7 +105,6 @@ func defaultMetricLabels() []string {
 		uuid,
 		bdf,
 		firmwareVersion,
-		pertVersion,
 		driverVersion,
 		hostname,
 		kubernetesNamespace,

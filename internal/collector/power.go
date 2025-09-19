@@ -88,7 +88,6 @@ func (t *powerCollector) postProcess(metrics MetricContainer) error {
 				uuid:                metric[uuid].(string),
 				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
-				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),
 				hostname:            metric[hostname].(string),
 				kubernetesNamespace: metric[kubernetesNamespace].(string),
