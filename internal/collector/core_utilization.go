@@ -65,8 +65,8 @@ func (t *coreUtilizationCollector) Collect() error {
 
 		for _, coreUtilization := range coreUtilizationSlice {
 			duplicated := deepCopyMetric(metric)
-			duplicated[core] = strconv.Itoa(int(coreUtilization.Core))
-			duplicated[peUtilization] = coreUtilization.PeUsagePercentage
+			duplicated[core] = strconv.Itoa(int(coreUtilization.Core()))
+			duplicated[peUtilization] = coreUtilization.PeUsagePercentage()
 			metricContainer = append(metricContainer, duplicated)
 		}
 	}
