@@ -18,9 +18,8 @@ import (
 )
 
 const (
-	k8sSocket                         = "/var/lib/kubelet/pod-resources/kubelet.sock"
-	furiosaResourcePrefix             = "furiosa.ai"
-	furiosaPartitionedResourcePattern = "_cores_"
+	k8sSocket             = "/var/lib/kubelet/pod-resources/kubelet.sock"
+	furiosaResourcePrefix = "furiosa.ai"
 )
 
 type podInfo struct {
@@ -143,27 +142,12 @@ func (k *kubeResourcesMapper) TransformDeviceMetrics(metrics MetricContainer, co
 				continue
 			}
 
-			if len(podInfoSlice) == 1 && len(podInfoSlice[0].AllocatedPE) == 8 {
-				// exclusive allocation case
-				copied := deepCopyMetric(metric)
-				copied[kubernetesNamespace] = podInfoSlice[0].Namespace
-				copied[kubernetesPod] = podInfoSlice[0].Name
-				copied[kubernetesContainer] = podInfoSlice[0].ContainerName
-				copied[core] = podInfoSlice[0].CoreLabel
-				transformed = append(transformed, copied)
-			} else {
-				// partitioned allocation case, preserve origin metric and duplicate the metric for each pod
-				transformed = append(transformed, metric)
-				for _, podInformation := range podInfoSlice {
-					duplicated := deepCopyMetric(metric)
-					duplicated[kubernetesNamespace] = podInformation.Namespace
-					duplicated[kubernetesPod] = podInformation.Name
-					duplicated[kubernetesContainer] = podInformation.ContainerName
-					duplicated[core] = podInformation.CoreLabel
-
-					transformed = append(transformed, duplicated)
-				}
-			}
+			copied := deepCopyMetric(metric)
+			copied[kubernetesNamespace] = podInfoSlice[0].Namespace
+			copied[kubernetesPod] = podInfoSlice[0].Name
+			copied[kubernetesContainer] = podInfoSlice[0].ContainerName
+			copied[core] = podInfoSlice[0].CoreLabel
+			transformed = append(transformed, copied)
 		}
 	}
 
@@ -202,27 +186,27 @@ func buildMultiWiseCache() (deviceWiseCache, coreWiseCache, error) {
 				}
 
 				for _, deviceID := range containerDevice.GetDeviceIds() {
-					deviceUUID := strings.Split(deviceID, furiosaPartitionedResourcePattern)[0]
-					allocatedPE := getAllocatedPEfromDeviceID(deviceID)
+					// fixme: use resource spec information from SMI or furiosaDevice
+					allocatedPE := getAllocatedPE()
 
 					podInformation := podInfo{
 						Name:          podResource.GetName(),
 						Namespace:     podResource.GetNamespace(),
 						ContainerName: containerResource.GetName(),
 						AllocatedPE:   allocatedPE,
-						CoreLabel:     getCoreLabelfromDeviceID(deviceID),
+						CoreLabel:     "0-7",
 					}
 
 					// build device wise cache
-					deviceWise[deviceUUID] = append(deviceWise[deviceUUID], podInformation)
+					deviceWise[deviceID] = append(deviceWise[deviceID], podInformation)
 
 					// build core wise cache
-					if _, ok := coreWise[deviceUUID]; !ok {
-						coreWise[deviceUUID] = make(coreToPodInfo)
+					if _, ok := coreWise[deviceID]; !ok {
+						coreWise[deviceID] = make(coreToPodInfo)
 					}
 
 					for _, coreIdx := range allocatedPE {
-						coreWise[deviceUUID][coreIdx] = podInformation
+						coreWise[deviceID][coreIdx] = podInformation
 					}
 				}
 			}
@@ -265,31 +249,6 @@ func listPods(conn *grpc.ClientConn) (*podResourcesAPI.ListPodResourcesResponse,
 	return resp, nil
 }
 
-func getAllocatedPEfromDeviceID(deviceID string) []int {
-	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
-		return []int{0, 1, 2, 3, 4, 5, 6, 7} // TODO(jongchan): warboy case?
-	} else {
-		cores := strings.Split(deviceID, furiosaPartitionedResourcePattern)[1]
-		coreRange := strings.Split(cores, "-")
-		if len(coreRange) == 1 {
-			n, _ := strconv.Atoi(coreRange[0])
-			return []int{n}
-		} else {
-			n, _ := strconv.Atoi(coreRange[0])
-			m, _ := strconv.Atoi(coreRange[1])
-			allocatedPE := []int{}
-			for i := n; i <= m; i++ {
-				allocatedPE = append(allocatedPE, i)
-			}
-			return allocatedPE
-		}
-	}
-}
-
-func getCoreLabelfromDeviceID(deviceID string) string {
-	if !strings.Contains(deviceID, furiosaPartitionedResourcePattern) {
-		return "0-7" // TODO(jongchan): warboy case?
-	} else {
-		return strings.Split(deviceID, furiosaPartitionedResourcePattern)[1]
-	}
+func getAllocatedPE() []int {
+	return []int{0, 1, 2, 3, 4, 5, 6, 7}
 }

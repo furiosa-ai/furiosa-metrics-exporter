@@ -94,6 +94,11 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
+	observer, err := smi.CreateDefaultObserver()
+	if err != nil {
+		return err
+	}
+
 	driverInfo, err := smi.DriverInfo()
 	if err != nil {
 		return err
@@ -104,7 +109,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 
 	// Create Exporter
 	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(ctx, logger, cfg, devices, metricFactory, errChan)
+	metricsExporter, err := exporter.NewGenericExporter(ctx, logger, cfg, devices, observer, metricFactory, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err

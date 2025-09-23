@@ -8,7 +8,6 @@ const (
 	core                = "core"
 	bdf                 = "pci_bus_id"
 	firmwareVersion     = "firmware_version"
-	pertVersion         = "pert_version"
 	driverVersion       = "driver_version"
 	hostname            = "hostname"
 	kubernetesNamespace = "namespace"

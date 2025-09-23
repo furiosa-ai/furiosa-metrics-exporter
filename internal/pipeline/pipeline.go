@@ -11,13 +11,13 @@ type Pipeline struct {
 	collectors []collector.Collector
 }
 
-func NewRegisteredPipeline(devices []smi.Device, metricFactory collector.MetricFactory, kubeResMapper collector.KubeResourcesMapper) *Pipeline {
+func NewRegisteredPipeline(devices []smi.Device, observer smi.Observer, metricFactory collector.MetricFactory, kubeResMapper collector.KubeResourcesMapper) *Pipeline {
 	p := Pipeline{
 		collectors: []collector.Collector{
 			collector.NewTemperatureCollector(devices, metricFactory, kubeResMapper),
 			collector.NewPowerCollector(devices, metricFactory, kubeResMapper),
 			collector.NewLivenessCollector(devices, metricFactory, kubeResMapper),
-			collector.NewCoreUtilizationCollector(devices, metricFactory, kubeResMapper),
+			collector.NewCoreUtilizationCollector(devices, observer, metricFactory, kubeResMapper),
 			collector.NewCoreFrequencyCollector(devices, metricFactory, kubeResMapper),
 			collector.NewCycleCollector(devices, metricFactory, kubeResMapper),
 		},
