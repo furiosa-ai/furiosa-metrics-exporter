@@ -82,7 +82,7 @@ The following table describes the common metric labels:
    * - arch
      - The architecture of the Furiosa NPU device. e.g. warboy, rngd
    * - core
-     - The core number of the Furiosa NPU device. e.g. 0, 1, 2, 3, 4, 5, 6, 7, 0-1, 2-3, 0-3, 4-5, 6-7, 4-7, 0-7
+     - The core number of the Furiosa NPU device. e.g. 0, 1, 2, 3, 4, 5, 6, 7, 0-7
    * - device
      - The device name of the Furiosa NPU device. e.g. npu0
    * - uuid
