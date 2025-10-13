@@ -20,6 +20,7 @@ func NewRegisteredPipeline(devices []smi.Device, observer smi.Observer, metricFa
 			collector.NewCoreUtilizationCollector(devices, observer, metricFactory, kubeResMapper),
 			collector.NewCoreFrequencyCollector(devices, metricFactory, kubeResMapper),
 			collector.NewCycleCollector(devices, metricFactory, kubeResMapper),
+			collector.NewThrottleReasonCollector(devices, metricFactory, kubeResMapper),
 		},
 	}
 
