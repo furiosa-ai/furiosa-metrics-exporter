@@ -2,53 +2,98 @@ package collector
 
 import (
 	"errors"
+	"time"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+type throttleEvent struct {
+	timestamp      time.Time
+	throttleReason smi.ThrottleReason
+	eventCount     map[string]float64
+}
 
 type throttleReasonCollector struct {
 	devices       []smi.Device
 	metricFactory MetricFactory
 	counterVec    *prometheus.CounterVec
 	kubeResMapper KubeResourcesMapper
+
+	interval   int
+	windowSize int
+
+	throttleEvents map[smi.Device][]throttleEvent
 }
 
 const (
-	idle            = "idle"
-	thermalSlowdown = "thermal_slowdown"
-	appPowerCap     = "app_power_cap"
-	appClockCap     = "app_clock_cap"
-	hwClockCap      = "hw_clock_cap"
-	hwBusLimit      = "hw_bus_limit"
-	hwPowerCap      = "hw_power_cap"
-	otherReason     = "other_reason"
+	idleLabel            = "idle"
+	thermalSlowdownLabel = "thermal_slowdown"
+	appPowerCapLabel     = "app_power_cap"
+	appClockCapLabel     = "app_clock_cap"
+	hwClockCapLabel      = "hw_clock_cap"
+	hwBusLimitLabel      = "hw_bus_limit"
+	hwPowerCapLabel      = "hw_power_cap"
+	otherReasonLabel     = "other_reason"
 )
 
 var throttleReasonLabels = []string{
-	idle,
-	thermalSlowdown,
-	appPowerCap,
-	appClockCap,
-	hwClockCap,
-	hwBusLimit,
-	hwPowerCap,
-	otherReason,
+	idleLabel,
+	thermalSlowdownLabel,
+	appPowerCapLabel,
+	appClockCapLabel,
+	hwClockCapLabel,
+	hwBusLimitLabel,
+	hwPowerCapLabel,
+	otherReasonLabel,
 }
-
-var throttleReasonCache smi.ThrottleReason
 
 var _ Collector = (*throttleReasonCollector)(nil)
 
 func NewThrottleReasonCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+	newThrottleEvents := make(map[smi.Device][]throttleEvent)
+	for _, d := range devices {
+		newThrottleEvents[d] = make([]throttleEvent, 0)
+	}
+
 	return &throttleReasonCollector{
-		devices:       devices,
-		metricFactory: metricFactory,
-		kubeResMapper: kubeResMapper,
+		devices:        devices,
+		metricFactory:  metricFactory,
+		kubeResMapper:  kubeResMapper,
+		interval:       1,
+		windowSize:     300,
+		throttleEvents: newThrottleEvents,
 	}
 }
 
 func (t *throttleReasonCollector) Register() {
+	go func() {
+		tick := time.NewTicker(time.Second * time.Duration(t.interval))
+		defer tick.Stop()
+
+		for range tick.C {
+			for _, d := range t.devices {
+				deviceThrottleReason, err := d.ThrottleReason()
+				if err != nil {
+					continue
+				}
+
+				t.throttleEvents[d] = appendThrottleEvent(t.throttleEvents[d], deviceThrottleReason)
+
+				// Remove old events
+				cutoff := time.Now().Add(-time.Duration(t.windowSize) * time.Second)
+				events := t.throttleEvents[d]
+				i := 0
+				for ; i < len(events); i++ {
+					if events[i].timestamp.After(cutoff) {
+						break
+					}
+				}
+				t.throttleEvents[d] = events[i:]
+			}
+		}
+	}()
+
 	opts := prometheus.CounterOpts{
 		Name: "furiosa_npu_throttling_events_count",
 		Help: "The throttling event count of NPU device",
@@ -74,13 +119,15 @@ func (t *throttleReasonCollector) Collect() error {
 			continue
 		}
 
-		deviceThrottleReason, err := d.ThrottleReason()
-		if err != nil {
-			errs = append(errs, err)
+		if len(t.throttleEvents[d]) == 0 {
 			continue
 		}
 
-		metric = appendThrottleReasonLabels(metric, deviceThrottleReason)
+		latestThrottleEventCount := t.throttleEvents[d][len(t.throttleEvents[d])-1].eventCount
+
+		for throttleLabel, count := range latestThrottleEventCount {
+			metric[throttleLabel] = count
+		}
 
 		metricContainer = append(metricContainer, metric)
 	}
@@ -98,6 +145,7 @@ func (t *throttleReasonCollector) Collect() error {
 
 func (t *throttleReasonCollector) postProcess(metrics MetricContainer) error {
 	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, false)
+	t.counterVec.Reset()
 
 	for _, metric := range transformed {
 		for _, throttleLabel := range throttleReasonLabels {
@@ -123,54 +171,90 @@ func (t *throttleReasonCollector) postProcess(metrics MetricContainer) error {
 	return nil
 }
 
-func appendThrottleReasonLabels(metric Metric, throttleReason smi.ThrottleReason) Metric {
-	if throttleReason&(smi.ThrottleReasonIdle) != throttleReasonCache&(smi.ThrottleReasonIdle) {
-		metric[idle] = 1.0
-	} else {
-		metric[idle] = 0.0
+func appendThrottleEvent(throttleEvents []throttleEvent, throttleReason smi.ThrottleReason) []throttleEvent {
+	if len(throttleEvents) == 0 {
+		newEvent := throttleEvent{
+			timestamp:      time.Now(),
+			throttleReason: throttleReason,
+			eventCount: map[string]float64{
+				idleLabel:            0,
+				thermalSlowdownLabel: 0,
+				appPowerCapLabel:     0,
+				appClockCapLabel:     0,
+				hwClockCapLabel:      0,
+				hwBusLimitLabel:      0,
+				hwPowerCapLabel:      0,
+				otherReasonLabel:     0,
+			},
+		}
+
+		return []throttleEvent{
+			newEvent,
+		}
 	}
 
-	if throttleReason&(smi.ThrottleReasonThermalSlowdown) != throttleReasonCache&(smi.ThrottleReasonThermalSlowdown) {
-		metric[thermalSlowdown] = 1.0
-	} else {
-		metric[thermalSlowdown] = 0.0
+	latestEvent := throttleEvents[len(throttleEvents)-1]
+	latestThrottleReason := latestEvent.throttleReason
+
+	if latestThrottleReason == throttleReason {
+		return throttleEvents
 	}
 
-	if throttleReason&(smi.ThrottleReasonAppPowerCap) != throttleReasonCache&(smi.ThrottleReasonAppPowerCap) {
-		metric[appPowerCap] = 1.0
+	newEventCount := make(map[string]float64)
+
+	if throttleReason&(smi.ThrottleReasonIdle) != latestThrottleReason&(smi.ThrottleReasonIdle) {
+		newEventCount[idleLabel] = latestEvent.eventCount[idleLabel] + 1
 	} else {
-		metric[appPowerCap] = 0.0
+		newEventCount[idleLabel] = latestEvent.eventCount[idleLabel]
 	}
 
-	if throttleReason&(smi.ThrottleReasonAppClockCap) != throttleReasonCache&(smi.ThrottleReasonAppClockCap) {
-		metric[appClockCap] = 1.0
+	if throttleReason&(smi.ThrottleReasonThermalSlowdown) != latestThrottleReason&(smi.ThrottleReasonThermalSlowdown) {
+		newEventCount[thermalSlowdownLabel] = latestEvent.eventCount[thermalSlowdownLabel] + 1
 	} else {
-		metric[appClockCap] = 0.0
+		newEventCount[thermalSlowdownLabel] = latestEvent.eventCount[thermalSlowdownLabel]
 	}
 
-	if throttleReason&(smi.ThrottleReasonHwClockCap) != throttleReasonCache&(smi.ThrottleReasonHwClockCap) {
-		metric[hwClockCap] = 1.0
+	if throttleReason&(smi.ThrottleReasonAppPowerCap) != latestThrottleReason&(smi.ThrottleReasonAppPowerCap) {
+		newEventCount[appPowerCapLabel] = latestEvent.eventCount[appPowerCapLabel] + 1
 	} else {
-		metric[hwClockCap] = 0.0
+		newEventCount[appPowerCapLabel] = latestEvent.eventCount[appPowerCapLabel]
 	}
 
-	if throttleReason&(smi.ThrottleReasonHwBusLimit) != throttleReasonCache&(smi.ThrottleReasonHwBusLimit) {
-		metric[hwBusLimit] = 1.0
+	if throttleReason&(smi.ThrottleReasonAppClockCap) != latestThrottleReason&(smi.ThrottleReasonAppClockCap) {
+		newEventCount[appClockCapLabel] = latestEvent.eventCount[appClockCapLabel] + 1
 	} else {
-		metric[hwBusLimit] = 0.0
+		newEventCount[appClockCapLabel] = latestEvent.eventCount[appClockCapLabel]
 	}
 
-	if throttleReason&(smi.ThrottleReasonHwPowerCap) != throttleReasonCache&(smi.ThrottleReasonHwPowerCap) {
-		metric[hwPowerCap] = 1.0
+	if throttleReason&(smi.ThrottleReasonHwClockCap) != latestThrottleReason&(smi.ThrottleReasonHwClockCap) {
+		newEventCount[hwClockCapLabel] = latestEvent.eventCount[hwClockCapLabel] + 1
 	} else {
-		metric[hwPowerCap] = 0.0
+		newEventCount[hwClockCapLabel] = latestEvent.eventCount[hwClockCapLabel]
 	}
 
-	if throttleReason&(smi.ThrottleReasonOtherReason) != throttleReasonCache&(smi.ThrottleReasonOtherReason) {
-		metric[otherReason] = 1.0
+	if throttleReason&(smi.ThrottleReasonHwBusLimit) != latestThrottleReason&(smi.ThrottleReasonHwBusLimit) {
+		newEventCount[hwBusLimitLabel] = latestEvent.eventCount[hwBusLimitLabel] + 1
 	} else {
-		metric[otherReason] = 0.0
+		newEventCount[hwBusLimitLabel] = latestEvent.eventCount[hwBusLimitLabel]
 	}
 
-	return metric
+	if throttleReason&(smi.ThrottleReasonHwPowerCap) != latestThrottleReason&(smi.ThrottleReasonHwPowerCap) {
+		newEventCount[hwPowerCapLabel] = latestEvent.eventCount[hwPowerCapLabel] + 1
+	} else {
+		newEventCount[hwPowerCapLabel] = latestEvent.eventCount[hwPowerCapLabel]
+	}
+
+	if throttleReason&(smi.ThrottleReasonOtherReason) != latestThrottleReason&(smi.ThrottleReasonOtherReason) {
+		newEventCount[otherReasonLabel] = latestEvent.eventCount[otherReasonLabel] + 1
+	} else {
+		newEventCount[otherReasonLabel] = latestEvent.eventCount[otherReasonLabel]
+	}
+
+	newEvent := throttleEvent{
+		timestamp:      time.Now(),
+		throttleReason: throttleReason,
+		eventCount:     newEventCount,
+	}
+
+	return append(throttleEvents, newEvent)
 }
