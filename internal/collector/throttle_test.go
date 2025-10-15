@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
@@ -11,9 +12,12 @@ import (
 
 func newFakeThrottleCollector() Collector {
 	return &throttleReasonCollector{
-		devices:       nil,
-		metricFactory: nil,
-		kubeResMapper: NewFakeKubeResourcesMapper(),
+		devices:        nil,
+		metricFactory:  nil,
+		kubeResMapper:  NewFakeKubeResourcesMapper(),
+		interval:       1,
+		windowSize:     300,
+		throttleEvents: make(map[smi.Device][]throttleEvent),
 	}
 }
 
@@ -27,14 +31,14 @@ func TestThrottleCollector_PostProcessing(t *testing.T) {
 	metric[core] = "0-7"
 	metric[device] = "npu0"
 	metric[uuid] = uuid
-	metric[idle] = float64(1)
-	metric[thermalSlowdown] = float64(1)
-	metric[appPowerCap] = float64(1)
-	metric[appClockCap] = float64(1)
-	metric[hwClockCap] = float64(1)
-	metric[hwBusLimit] = float64(1)
-	metric[hwPowerCap] = float64(1)
-	metric[otherReason] = float64(1)
+	metric[idleLabel] = float64(1)
+	metric[thermalSlowdownLabel] = float64(1)
+	metric[appPowerCapLabel] = float64(1)
+	metric[appClockCapLabel] = float64(1)
+	metric[hwClockCapLabel] = float64(1)
+	metric[hwBusLimitLabel] = float64(1)
+	metric[hwPowerCapLabel] = float64(1)
+	metric[otherReasonLabel] = float64(1)
 
 	tc = append(tc, metric)
 	err := collector.postProcess(tc)
