@@ -23,7 +23,7 @@ type throttleReasonCollector struct {
 	interval   int
 	windowSize int
 
-	throttleEvents map[smi.Device][]throttleEvent
+	throttleEvents map[string][]throttleEvent
 }
 
 const (
@@ -51,9 +51,16 @@ var throttleReasonLabels = []string{
 var _ Collector = (*throttleReasonCollector)(nil)
 
 func NewThrottleReasonCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
-	newThrottleEvents := make(map[smi.Device][]throttleEvent)
+	newThrottleEvents := make(map[string][]throttleEvent)
 	for _, d := range devices {
-		newThrottleEvents[d] = make([]throttleEvent, 0)
+		deviceInfo, err := d.DeviceInfo()
+		if err != nil {
+			continue
+		}
+
+		uuid := deviceInfo.UUID()
+
+		newThrottleEvents[uuid] = make([]throttleEvent, 0)
 	}
 
 	return &throttleReasonCollector{
@@ -78,18 +85,25 @@ func (t *throttleReasonCollector) Register() {
 					continue
 				}
 
-				t.throttleEvents[d] = appendThrottleEvent(t.throttleEvents[d], deviceThrottleReason)
+				deviceInfo, err := d.DeviceInfo()
+				if err != nil {
+					continue
+				}
+
+				uuid := deviceInfo.UUID()
+
+				t.throttleEvents[uuid] = appendThrottleEvent(t.throttleEvents[uuid], deviceThrottleReason)
 
 				// Remove old events
 				cutoff := time.Now().Add(-time.Duration(t.windowSize) * time.Second)
-				events := t.throttleEvents[d]
+				events := t.throttleEvents[uuid]
 				i := 0
 				for ; i < len(events); i++ {
 					if events[i].timestamp.After(cutoff) {
 						break
 					}
 				}
-				t.throttleEvents[d] = events[i:]
+				t.throttleEvents[uuid] = events[i:]
 			}
 		}
 	}()
@@ -119,11 +133,19 @@ func (t *throttleReasonCollector) Collect() error {
 			continue
 		}
 
-		if len(t.throttleEvents[d]) == 0 {
+		deviceInfo, err := d.DeviceInfo()
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
-		latestThrottleEventCount := t.throttleEvents[d][len(t.throttleEvents[d])-1].eventCount
+		uuid := deviceInfo.UUID()
+
+		if len(t.throttleEvents[uuid]) == 0 {
+			continue
+		}
+
+		latestThrottleEventCount := t.throttleEvents[uuid][len(t.throttleEvents[uuid])-1].eventCount
 
 		for throttleLabel, count := range latestThrottleEventCount {
 			metric[throttleLabel] = count
