@@ -2,6 +2,7 @@ package collector
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
@@ -23,7 +24,8 @@ type throttleReasonCollector struct {
 	interval   int
 	windowSize int
 
-	throttleEvents map[string][]throttleEvent
+	throttleEventsLock sync.RWMutex
+	throttleEvents     map[string][]throttleEvent
 }
 
 const (
@@ -79,6 +81,8 @@ func (t *throttleReasonCollector) Register() {
 		defer tick.Stop()
 
 		for range tick.C {
+			t.throttleEventsLock.Lock()
+
 			for _, d := range t.devices {
 				deviceThrottleReason, err := d.ThrottleReason()
 				if err != nil {
@@ -105,6 +109,8 @@ func (t *throttleReasonCollector) Register() {
 				}
 				t.throttleEvents[uuid] = events[i:]
 			}
+
+			t.throttleEventsLock.Unlock()
 		}
 	}()
 
@@ -126,6 +132,9 @@ func (t *throttleReasonCollector) Collect() error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
+
+	t.throttleEventsLock.RLock()
+
 	for _, d := range t.devices {
 		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
 		if err != nil {
@@ -157,6 +166,8 @@ func (t *throttleReasonCollector) Collect() error {
 
 		metricContainer = append(metricContainer, metric)
 	}
+
+	t.throttleEventsLock.RUnlock()
 
 	if err := t.postProcess(metricContainer); err != nil {
 		errs = append(errs, err)
