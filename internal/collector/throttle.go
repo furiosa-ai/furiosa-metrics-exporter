@@ -103,7 +103,7 @@ func (t *throttleReasonCollector) Register() {
 				events := t.throttleEvents[uuid]
 				i := 0
 				for ; i < len(events); i++ {
-					if events[i].timestamp.After(cutoff) {
+					if !events[i].timestamp.Before(cutoff) {
 						break
 					}
 				}
