@@ -142,13 +142,7 @@ func (t *throttleReasonCollector) Collect() error {
 			continue
 		}
 
-		deviceInfo, err := d.DeviceInfo()
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		uuid := deviceInfo.UUID()
+		uuid := metric[uuid].(string)
 
 		if _, ok := t.throttleEvents[uuid]; !ok {
 			continue
