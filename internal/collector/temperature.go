@@ -2,6 +2,7 @@ package collector
 
 import (
 	"errors"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -28,6 +29,14 @@ func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory, 
 	}
 }
 
+func (t *temperatureCollector) GetDevices() []smi.Device {
+	return t.devices
+}
+
+func (t *temperatureCollector) GetMetricFactory() MetricFactory {
+	return t.metricFactory
+}
+
 func (t *temperatureCollector) Register() {
 	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_temperature",
@@ -43,14 +52,13 @@ func (t *temperatureCollector) Register() {
 	))
 }
 
-func (t *temperatureCollector) Collect() error {
+func (t *temperatureCollector) Collect(metrics map[smi.Device]Metric) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-		if err != nil {
-			errs = append(errs, err)
+		metric, exists := metrics[d]
+		if !exists {
 			continue
 		}
 

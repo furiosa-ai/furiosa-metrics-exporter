@@ -31,6 +31,14 @@ func NewCoreUtilizationCollector(devices []smi.Device, observer smi.Observer, me
 	}
 }
 
+func (t *coreUtilizationCollector) GetDevices() []smi.Device {
+	return t.devices
+}
+
+func (t *coreUtilizationCollector) GetMetricFactory() MetricFactory {
+	return t.metricFactory
+}
+
 func (t *coreUtilizationCollector) Register() {
 	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_utilization",
@@ -46,14 +54,13 @@ func (t *coreUtilizationCollector) Register() {
 	))
 }
 
-func (t *coreUtilizationCollector) Collect() error {
+func (t *coreUtilizationCollector) Collect(metrics map[smi.Device]Metric) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-		if err != nil {
-			errs = append(errs, err)
+		metric, exists := metrics[d]
+		if !exists {
 			continue
 		}
 

@@ -75,6 +75,14 @@ func NewThrottleReasonCollector(devices []smi.Device, metricFactory MetricFactor
 	}
 }
 
+func (t *throttleReasonCollector) GetDevices() []smi.Device {
+	return t.devices
+}
+
+func (t *throttleReasonCollector) GetMetricFactory() MetricFactory {
+	return t.metricFactory
+}
+
 func (t *throttleReasonCollector) Register() {
 	go func() {
 		tick := time.NewTicker(time.Second * time.Duration(t.interval))
@@ -128,7 +136,7 @@ func (t *throttleReasonCollector) Register() {
 	))
 }
 
-func (t *throttleReasonCollector) Collect() error {
+func (t *throttleReasonCollector) Collect(metrics map[smi.Device]Metric) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
@@ -136,9 +144,8 @@ func (t *throttleReasonCollector) Collect() error {
 	t.throttleEventsLock.RLock()
 
 	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-		if err != nil {
-			errs = append(errs, err)
+		metric, exists := metrics[d]
+		if !exists {
 			continue
 		}
 
