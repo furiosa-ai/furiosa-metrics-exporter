@@ -2,6 +2,7 @@ package collector
 
 import (
 	"errors"
+
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -27,6 +28,14 @@ func NewPowerCollector(devices []smi.Device, metricFactory MetricFactory, kubeRe
 	}
 }
 
+func (t *powerCollector) GetDevices() []smi.Device {
+	return t.devices
+}
+
+func (t *powerCollector) GetMetricFactory() MetricFactory {
+	return t.metricFactory
+}
+
 func (t *powerCollector) Register() {
 	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_hw_power",
@@ -42,14 +51,13 @@ func (t *powerCollector) Register() {
 	))
 }
 
-func (t *powerCollector) Collect() error {
+func (t *powerCollector) Collect(metrics map[smi.Device]Metric) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-		if err != nil {
-			errs = append(errs, err)
+		metric, exists := metrics[d]
+		if !exists {
 			continue
 		}
 

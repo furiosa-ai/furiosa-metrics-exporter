@@ -39,8 +39,20 @@ func (p *Pipeline) Collect() []error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			c := p.collectors[i]
 
-			if err := p.collectors[i].Collect(); err != nil {
+			metrics := make(map[smi.Device]collector.Metric, 0)
+
+			for _, d := range c.GetDevices() {
+				metric, err := c.GetMetricFactory().NewDeviceWiseMetric(d)
+				if err != nil {
+					errors[i] = err
+					continue
+				}
+				metrics[d] = metric
+			}
+
+			if err := c.Collect(metrics); err != nil {
 				errors[i] = err
 			}
 		}()
