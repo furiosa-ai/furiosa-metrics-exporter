@@ -1,6 +1,6 @@
 module github.com/furiosa-ai/furiosa-metrics-exporter
 
-go 1.24.2
+go 1.25.4
 
 require (
 	github.com/furiosa-ai/furiosa-smi-go v0.6.0
