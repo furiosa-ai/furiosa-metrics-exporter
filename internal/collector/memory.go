@@ -9,6 +9,7 @@ import (
 
 const (
 	dramUsage = "dramUsage"
+	dramUtil  = "dramUtil"
 )
 
 type memoryCollector struct {
@@ -17,6 +18,7 @@ type memoryCollector struct {
 	kubeResMapper KubeResourcesMapper
 
 	dramUsageGaugeVec *prometheus.GaugeVec
+	dramUtilGaugeVec  *prometheus.GaugeVec
 }
 
 var _ Collector = (*memoryCollector)(nil)
@@ -49,6 +51,18 @@ func (t *memoryCollector) Register() {
 		prometheus.Opts(dramUsageOpts),
 		prometheus.GaugeValue,
 	))
+
+	dramUtilOpts := prometheus.GaugeOpts{
+		Name: "furiosa_npu_dram_utilization",
+		Help: "The current dram utilization of NPU device",
+	}
+
+	t.dramUtilGaugeVec = prometheus.NewGaugeVec(dramUtilOpts, defaultMetricLabels())
+	prometheus.MustRegister(NewLabelFilterCollector(
+		t.dramUtilGaugeVec,
+		prometheus.Opts(dramUtilOpts),
+		prometheus.GaugeValue,
+	))
 }
 
 func (t *memoryCollector) Collect(metrics map[smi.Device]Metric) error {
@@ -71,15 +85,19 @@ func (t *memoryCollector) Collect(metrics map[smi.Device]Metric) error {
 		dramShared := memUtil.DramShared().Memory()
 
 		dramUsageBytes := uint64(0)
+		dramTotalBytes := uint64(0)
 
 		for _, mem := range dram {
 			dramUsageBytes += mem.InUseBytes()
+			dramTotalBytes += mem.TotalBytes()
 		}
 		for _, mem := range dramShared {
 			dramUsageBytes += mem.InUseBytes()
+			dramTotalBytes += mem.TotalBytes()
 		}
 
 		metric[dramUsage] = dramUsageBytes
+		metric[dramUtil] = float64(dramUsageBytes) / float64(dramTotalBytes)
 		metricContainer = append(metricContainer, metric)
 	}
 
@@ -97,6 +115,7 @@ func (t *memoryCollector) Collect(metrics map[smi.Device]Metric) error {
 func (t *memoryCollector) postProcess(metrics MetricContainer) error {
 	transformed := t.kubeResMapper.TransformDeviceMetrics(metrics, false)
 	t.dramUsageGaugeVec.Reset()
+	t.dramUtilGaugeVec.Reset()
 
 	for _, metric := range transformed {
 		if value, ok := metric[dramUsage]; ok {
@@ -113,6 +132,22 @@ func (t *memoryCollector) postProcess(metrics MetricContainer) error {
 				kubernetesPod:       metric[kubernetesPod].(string),
 				kubernetesContainer: metric[kubernetesContainer].(string),
 			}).Set(float64(value.(uint64)))
+		}
+
+		if value, ok := metric[dramUtil]; ok {
+			t.dramUtilGaugeVec.With(prometheus.Labels{
+				arch:                metric[arch].(string),
+				core:                metric[core].(string),
+				device:              metric[device].(string),
+				uuid:                metric[uuid].(string),
+				bdf:                 metric[bdf].(string),
+				firmwareVersion:     metric[firmwareVersion].(string),
+				driverVersion:       metric[driverVersion].(string),
+				hostname:            metric[hostname].(string),
+				kubernetesNamespace: metric[kubernetesNamespace].(string),
+				kubernetesPod:       metric[kubernetesPod].(string),
+				kubernetesContainer: metric[kubernetesContainer].(string),
+			}).Set(value.(float64))
 		}
 	}
 
