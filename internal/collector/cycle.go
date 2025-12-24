@@ -73,7 +73,7 @@ func (t *cycleCollector) Collect(metrics map[smi.Device]Metric) error {
 	errs := make([]error, 0)
 	for _, d := range t.devices {
 		metric, exists := metrics[d]
-		if exists {
+		if !exists {
 			continue
 		}
 
