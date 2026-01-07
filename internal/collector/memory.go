@@ -9,7 +9,7 @@ import (
 
 const (
 	dramUsage = "dramUsage"
-	dramTotal  = "dramTotal"
+	dramTotal = "dramTotal"
 )
 
 type memoryCollector struct {
@@ -18,7 +18,7 @@ type memoryCollector struct {
 	kubeResMapper KubeResourcesMapper
 
 	dramUsageGaugeVec *prometheus.GaugeVec
-	dramTotalGaugeVec  *prometheus.GaugeVec
+	dramTotalGaugeVec *prometheus.GaugeVec
 }
 
 var _ Collector = (*memoryCollector)(nil)
