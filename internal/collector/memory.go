@@ -54,7 +54,7 @@ func (t *memoryCollector) Register() {
 
 	dramTotalOpts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_dram_total",
-		Help: "The total dram of NPU device",
+		Help: "The total dram of NPU device (Bytes)",
 	}
 
 	t.dramTotalGaugeVec = prometheus.NewGaugeVec(dramTotalOpts, defaultMetricLabels())
