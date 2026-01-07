@@ -3,6 +3,7 @@ package collector
 import (
 	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 )
+
 type Metric map[string]interface{}
 
 type MetricContainer []Metric
