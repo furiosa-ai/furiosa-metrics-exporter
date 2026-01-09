@@ -102,8 +102,9 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	errChan := make(chan error, 1)
 
 	if len(devices) == 0 {
-		logger.Info().Msg("no NPU device detected")
-		goto Loop
+		noDeviceError := fmt.Errorf("couldn't recognize any furiosa devices")
+		logger.Error().Msg("If this is not a NPU node, please deploy this plugin on NPU nodes only by tolerations or nodeSelector.")
+		return noDeviceError
 	}
 
 	observer, err = smi.CreateDefaultObserver()
