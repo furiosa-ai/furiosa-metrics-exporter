@@ -29,6 +29,14 @@ func NewCoreFrequencyCollector(devices []smi.Device, metricFactory MetricFactory
 	}
 }
 
+func (t *coreFrequencyCollector) GetDevices() []smi.Device {
+	return t.devices
+}
+
+func (t *coreFrequencyCollector) GetMetricFactory() MetricFactory {
+	return t.metricFactory
+}
+
 func (t *coreFrequencyCollector) Register() {
 	opts := prometheus.GaugeOpts{
 		Name: "furiosa_npu_core_frequency",
@@ -44,14 +52,13 @@ func (t *coreFrequencyCollector) Register() {
 	))
 }
 
-func (t *coreFrequencyCollector) Collect() error {
+func (t *coreFrequencyCollector) Collect(metrics map[smi.Device]Metric) error {
 	metricContainer := make(MetricContainer, 0, len(t.devices))
 
 	errs := make([]error, 0)
 	for _, d := range t.devices {
-		metric, err := t.metricFactory.NewDeviceWiseMetric(d)
-		if err != nil {
-			errs = append(errs, err)
+		metric, exists := metrics[d]
+		if !exists {
 			continue
 		}
 
@@ -94,7 +101,6 @@ func (t *coreFrequencyCollector) postProcess(metrics MetricContainer) error {
 				uuid:                metric[uuid].(string),
 				bdf:                 metric[bdf].(string),
 				firmwareVersion:     metric[firmwareVersion].(string),
-				pertVersion:         metric[pertVersion].(string),
 				driverVersion:       metric[driverVersion].(string),
 				hostname:            metric[hostname].(string),
 				kubernetesNamespace: metric[kubernetesNamespace].(string),

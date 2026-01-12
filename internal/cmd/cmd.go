@@ -3,10 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/exporter"
@@ -94,17 +95,33 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	driverInfo, err := smi.DriverInfo()
+	var metricFactory collector.MetricFactory
+	var metricsExporter *exporter.Exporter
+	var observer smi.Observer
+	var driverInfo smi.VersionInfo
+	errChan := make(chan error, 1)
+
+	if len(devices) == 0 {
+		noDeviceError := fmt.Errorf("couldn't recognize any furiosa devices")
+		logger.Err(noDeviceError).Msg("If this is not a NPU node, please deploy this plugin on NPU nodes only by tolerations or nodeSelector.")
+		return noDeviceError
+	}
+
+	observer, err = smi.CreateDefaultObserver()
+	if err != nil {
+		return err
+	}
+
+	driverInfo, err = smi.DriverInfo()
 	if err != nil {
 		return err
 	}
 
 	// Prepare Metric Factory
-	metricFactory := collector.NewMetricFactory(cfg.NodeName, driverInfo.String())
+	metricFactory = collector.NewMetricFactory(cfg.NodeName, driverInfo.String())
 
 	// Create Exporter
-	errChan := make(chan error, 1)
-	metricsExporter, err := exporter.NewGenericExporter(ctx, logger, cfg, devices, metricFactory, errChan)
+	metricsExporter, err = exporter.NewGenericExporter(ctx, logger, cfg, devices, observer, metricFactory, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err
@@ -127,8 +144,11 @@ Loop:
 		}
 	}
 
-	logger.Info().Msg("stopping metric server")
-	err = metricsExporter.Stop(ctx)
+	if metricsExporter != nil {
+		logger.Info().Msg("stopping metric server")
+		err = metricsExporter.Stop(ctx)
+	}
+
 	if err != nil {
 		return err
 	}
