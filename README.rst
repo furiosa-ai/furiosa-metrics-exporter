@@ -151,7 +151,7 @@ The following table describes the common metric labels:
    :widths: 100 300
    :header-rows: 1
 
-   * - Label Attribute
+   * - Attribute Name
      - Description
    * - arch
      - The architecture of the Furiosa NPU device. e.g. warboy, rngd
@@ -177,7 +177,7 @@ Additionally, the *namespace*, *pod*, and *container* labels require an environm
    :widths: 100 300
    :header-rows: 1
 
-   * - Label Attribute
+   * - Attribute Name
      - Description
    * - hostname
      - The hostname of the machine where the exporter is running.
@@ -197,7 +197,7 @@ This approach helps avoid having too many metric definitions and effectively agg
    :header-rows: 1
 
    * - Metric Type
-     - Label Attribute
+     - Label Name
      - Description
    * - Temperature
      - peak
