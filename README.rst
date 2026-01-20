@@ -15,6 +15,65 @@ This can be easily set up using the `Prometheus Chart <https://github.com/promet
 and `Grafana <https://github.com/grafana/helm-charts/tree/main/charts/grafana>`_
 Helm charts, along with the furiosa-metrics-exporter Helm chart.
 
+Deploying Furiosa Metrics Exporter with Helm
+---------------------------------------------------------
+The Furiosa metrics exporter helm chart is available at https://github.com/furiosa-ai/helm-charts. To configure deployment as you need, you can modify ``charts/furiosa-metrics-exporter/values.yaml``.
+For example, the Furiosa metrics exporter Helm chart automatically creates a Service Object with Prometheus annotations to enable metric scraping automatically. You can modify the values.yaml to change the port or disable the Prometheus annotations if needed.
+You can deploy the Furiosa Metrics Exporter by running the following commands:
+
+.. code-block:: sh
+
+    helm repo add furiosa https://furiosa-ai.github.io/helm-charts
+    helm repo update
+    helm install furiosa-metrics-exporter furiosa/furiosa-metrics-exporter -n <namespace>
+
+Alternative Installation: furiosa-metrics-exporter via apt
+----------------------------------------------------------
+.. note::
+   For special use cases or non-Kubernetes environments, you can alternatively install the exporter via an ``apt`` package.
+
+The minimum requirements for installing the ``furiosa-metrics-exporter`` package are as follows:
+
+* Ubuntu 22.04 LTS (Debian Bookworm) or later
+* Linux Kernel 6.3 or later
+* Administrator privileges on the system (root)
+* Setting up AptSetup and InstallingPrerequisites
+
+Then, please install the furiosa-metrics-exporter package as follows:
+
+.. code-block:: sh
+
+   sudo apt update
+   sudo apt install -y furiosa-metrics-exporter
+
+This command installs packages furiosa-libsmi and furiosa-metrics-exporter.
+
+Configuration
+-----------------------------------
+The Furiosa Metrics Exporter has various command-line (CLI) options.
+The following table summarizes the available CLI options:
+
+.. list-table:: Furiosa Metrics Exporter CLI Options
+   :align: center
+   :widths: 150 80 350
+   :header-rows: 1
+
+   * - CLI Option
+     - Required
+     - Description
+   * - ``--interval <int>``
+     - Yes
+     - Metrics collection interval in seconds. e.g., ``--interval 10`` for collecting metrics every 10 seconds.
+   * - ``--port <int>``
+     - Yes
+     - Port number for the metrics HTTP server. e.g., ``--port 6254``.
+   * - ``--node-name <string>``
+     - No
+     - If set, hostname label will be added to the metrics. Default is empty (``""``).
+   * - ``--kube-resources-label <bool>``
+     - No
+     - If set, Kubernetes resource labels (such as namespace, pod, and container) will be added to the metrics. Default is ``false``. Recommended when running in Kubernetes for richer metrics context.
+
 
 Metrics
 -----------------------------------
@@ -68,16 +127,31 @@ The following table shows the available collectors and metrics:
      - counter
      - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The task execution cycle of the NPU Task.
+   * - Total Dram Size
+     - furiosa_npu_dram_total
+     - gauge
+     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - The total DRAM size of the Furiosa NPU device.
+   * - Dram Used Size
+     - furiosa_npu_dram_usage
+     - gauge
+     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - The current used DRAM size of the Furiosa NPU device.
+   * - Throttling Events Count
+     - furiosa_npu_throttling_events_count
+     - gauge
+     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - The number of throttling events that occurred on the Furiosa NPU device within a fixed time window.
 
 All metrics share common metric labels such as arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, and container.
 The following table describes the common metric labels:
 
-.. list-table:: Common NPU Metrics Label
+.. list-table:: Common NPU Metrics Label Attributes
    :align: center
    :widths: 100 300
    :header-rows: 1
 
-   * - Common Metric Label
+   * - Attribute Name
      - Description
    * - arch
      - The architecture of the Furiosa NPU device. e.g. warboy, rngd
@@ -93,26 +167,37 @@ The following table describes the common metric labels:
      - The firmware version of the Furiosa NPU device. e.g. 2025.1.0+696efad
    * - driver_version
      - The driver version of the Furiosa NPU device. e.g. 2025.1.0+f09a8d8
-   * - hostname
-     - The hostname of the machine where the exporter is running. This attribute can be missing if the exporter is running on the host machine or in a naked container.
-   * - namespace
-     - The Kubernetes namespace where the exporter is running. This attribute can be missing if the exporter is running on the host machine or in a naked container.
-   * - pod
-     - The name of the Kubernetes pod where the exporter is running. This attribute can be missing if the exporter is running on the host machine or in a naked container.
-   * - container
-     - The name of the Kubernetes container where the exporter is running. This attribute can be missing if the exporter is running on the host machine or in a naked container.
 
+
+The following metric labels are optional and enabled only when the corresponding command-line options (``--node-name`` and ``--kube-resources-label``) are set.
+Additionally, the *namespace*, *pod*, and *container* labels require an environment where the `Kubernetes PodResource API <https://kubernetes.io/blog/2023/08/23/kubelet-podresources-api-ga/>`_ is supported.
+
+.. list-table:: Optional NPU Metrics Label Attributes
+   :align: center
+   :widths: 100 300
+   :header-rows: 1
+
+   * - Attribute Name
+     - Description
+   * - hostname
+     - The hostname of the machine where the exporter is running.
+   * - namespace
+     - The namespace of the Kubernetes pod to which the NPU is allocated.
+   * - pod
+     - The name of the Kubernetes pod to which the NPU is allocated.
+   * - container
+     - The container name within the Kubernetes pod to which the NPU is allocated.
 
 The metric label “label” is used to describe additional attributes specific to each metric.
 This approach helps avoid having too many metric definitions and effectively aggregates metrics that share common characteristics.
 
-.. list-table:: NPU Metrics Type
+.. list-table:: Additional Metric Label Attributes
    :align: center
    :widths: 100 120 200
    :header-rows: 1
 
    * - Metric Type
-     - Label Attribute
+     - Label Name
      - Description
    * - Temperature
      - peak
@@ -124,9 +209,6 @@ This approach helps avoid having too many metric definitions and effectively agg
      - rms
      - Root Mean Square (RMS) value of the power consumed by the device, providing an average power consumption metric over a period of time.
 
-**Note**
-
-The *namespace*, *pod*, and *container* labels exist only in environments where the `Kubernetes PodResource API <https://kubernetes.io/blog/2023/08/23/kubelet-podresources-api-ga/>`_ is available.
 
 **Examples**
 
@@ -184,22 +266,6 @@ The following shows real-world example of the metrics:
   furiosa_npu_task_execution_cycle{arch="rngd",container="furiosa",core="6",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",namespace="default",pci_bus_id="0000:c7:00.0",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 5.685170235e+09
   furiosa_npu_task_execution_cycle{arch="rngd",container="furiosa",core="7",device="npu0",driver_version="2025.1.0+f09a8d8",firmware_version="2025.1.0+696efad",hostname="cntk002",namespace="default",pci_bus_id="0000:c7:00.0",pod="furiosa",uuid="09512C86-0702-4303-8F40-474746474A40"} 5.685170235e+09
 
-
-Deploying Furiosa Metrics Exporter with Helm
----------------------------------------------------------
-The Furiosa metrics exporter helm chart is available at https://github.com/furiosa-ai/helm-charts.
-
-To configure deployment as you need, you can modify ``charts/furiosa-metrics-exporter/values.yaml``.
-For example, the Furiosa metrics exporter Helm chart automatically creates a Service Object with Prometheus annotations to enable metric scraping automatically.
-You can modify the values.yaml to change the port or disable the Prometheus annotations if needed.
-
-You can deploy the Furiosa Metrics Exporter by running the following commands:
-
-.. code-block:: sh
-
-    helm repo add furiosa https://furiosa-ai.github.io/helm-charts
-    helm repo update
-    helm install furiosa-metrics-exporter furiosa/furiosa-metrics-exporter -n kube-system
 
 
 License
