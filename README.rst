@@ -95,55 +95,55 @@ The following table shows the available collectors and metrics:
    * - Liveness
      - furiosa_npu_alive
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The liveness of the Furiosa NPU device.
    * - Temperature
      - furiosa_npu_hw_temperature
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container, label
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container, label
      - The temperature of the Furiosa NPU device.
    * - Power
      - furiosa_npu_hw_power
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container, label
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container, label
      - The power consumption of the Furiosa NPU device.
    * - Core Utilization
      - furiosa_npu_core_utilization
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The core utilization of the Furiosa NPU device.
    * - Core Frequency
      - furiosa_npu_core_frequency
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The core frequency of the Furiosa NPU device.
    * - Cycle Count
      - furiosa_npu_total_cycle_count
      - counter
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The total cycle count of the Furiosa NPU device.
    * - Task Execution Cycle
      - furiosa_npu_task_execution_cycle
      - counter
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The task execution cycle of the NPU Task.
-   * - Total Dram Size
+   * - Total DRAM Size
      - furiosa_npu_dram_total
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The total DRAM size of the Furiosa NPU device.
-   * - Dram Used Size
+   * - DRAM Used Size
      - furiosa_npu_dram_usage
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
-     - The current used DRAM size of the Furiosa NPU device.
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - The currently used DRAM size of the Furiosa NPU device.
    * - Throttling Events Count
      - furiosa_npu_throttling_events_count
      - gauge
-     - arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, container
+     - arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, container
      - The number of throttling events that occurred on the Furiosa NPU device within a fixed time window.
 
-All metrics share common metric labels such as arch, core, device, uuid, pci_bud_id, firmware_version, driver_version, hostname, namespace, pod, and container.
+All metrics share common metric labels such as arch, core, device, uuid, pci_bus_id, firmware_version, driver_version, hostname, namespace, pod, and container.
 The following table describes the common metric labels:
 
 .. list-table:: Common NPU Metrics Label Attributes
