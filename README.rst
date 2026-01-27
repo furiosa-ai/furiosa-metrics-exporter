@@ -25,7 +25,7 @@ You can deploy the Furiosa Metrics Exporter by running the following commands:
 
     helm repo add furiosa https://furiosa-ai.github.io/helm-charts
     helm repo update
-    helm install furiosa-metrics-exporter furiosa/furiosa-metrics-exporter -n <namespace>
+    helm install furiosa-metrics-exporter furiosa/furiosa-metrics-exporter -n furiosa-system
 
 Alternative Installation: furiosa-metrics-exporter via apt
 ----------------------------------------------------------
