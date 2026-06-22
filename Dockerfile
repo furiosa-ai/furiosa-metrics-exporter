@@ -10,7 +10,7 @@ RUN make build
 
 # Stage arch-specific runtime libs into a path tree mirroring /usr/lib/<triplet>/
 # so the distroless final stage (no shell) can COPY them to the correct location.
-RUN set -eux; \
+RUN set -e; \
     case "$TARGETARCH" in \
         amd64) libDir='x86_64-linux-gnu' ;; \
         arm64) libDir='aarch64-linux-gnu' ;; \
