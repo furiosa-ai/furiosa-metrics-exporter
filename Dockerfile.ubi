@@ -1,0 +1,57 @@
+ARG BASE_IMAGE=asia-northeast3-docker.pkg.dev/next-gen-infra/furiosa-ai/libfuriosa-kubernetes:v2026.1.1
+
+FROM $BASE_IMAGE as build
+ARG TARGETARCH
+
+# Build metric-exporter binary
+WORKDIR /
+COPY . /
+RUN make build
+
+# Stage arch-specific runtime libs into a path tree mirroring /usr/lib/<triplet>/
+# so the distroless final stage (no shell) can COPY them to the correct location.
+RUN set -e; \
+    case "$TARGETARCH" in \
+        amd64) libDir='x86_64-linux-gnu' ;; \
+        arm64) libDir='aarch64-linux-gnu' ;; \
+        *) echo >&2 "unsupported architecture: $TARGETARCH"; exit 1 ;; \
+    esac; \
+    mkdir -p /staging/usr/lib/$libDir; \
+    cp /usr/lib/$libDir/libfuriosa_smi.so /staging/usr/lib/$libDir/libfuriosa_smi.so; \
+    cp /usr/lib/$libDir/libgcc_s.so.1     /staging/usr/lib/$libDir/libgcc_s.so.1
+
+FROM registry.access.redhat.com/ubi9/ubi:9.8
+ARG TARGETARCH
+
+LABEL name="furiosa-metrics-exporter" \
+    vendor="FuriosaAI, Inc." \
+    version="2026.1.1" \
+    release="1" \
+    summary="Furiosa metric exporter for k8s deployed furiosa components" \
+    description="Furiosa metric exporter for k8s deployed furiosa components" \
+    maintainer="FuriosaAI Cloud Native Team <sw-devops@furiosa.ai>" \
+    io.openshift.tags="npu,furiosa,rngd,ai,accelerator,inference,metrics" \
+    io.k8s.display-name="furiosa-metrics-exporter" \
+    io.k8s.description="Furiosa metric exporter for k8s deployed furiosa components"
+
+RUN dnf update -y openssl openssl-libs glib2 libcap krb5-libs && dnf clean all
+
+WORKDIR /
+
+COPY --from=build /staging/ /
+COPY --from=build /main /main
+
+COPY LICENSE.txt /licenses/LICENSE.txt
+
+RUN set -e; \
+    case "$TARGETARCH" in \
+        amd64) libDir='x86_64-linux-gnu' ;; \
+        arm64) libDir='aarch64-linux-gnu' ;; \
+        *) echo >&2 "unsupported architecture: $TARGETARCH"; exit 1 ;; \
+    esac; \
+    chmod -R 755 /usr/lib/$libDir/; \
+    echo "/usr/lib/$libDir" > /etc/ld.so.conf.d/furiosa.conf; \
+    ldconfig
+
+USER 1001
+CMD ["./main"]
