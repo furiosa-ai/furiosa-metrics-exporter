@@ -72,7 +72,7 @@ The following table summarizes the available CLI options:
      - If set, hostname label will be added to the metrics. Default is empty (``""``).
    * - ``--kube-resources-label <bool>``
      - No
-     - If set, Kubernetes resource labels (such as namespace, pod, and container) will be added to the metrics. Default is ``false``. Recommended when running in Kubernetes for richer metrics context.
+     - If set, Kubernetes resource labels (such as namespace, pod, and container) will be added to the metrics. Default is ``false``. Recommended when running in Kubernetes for richer metrics context. Supports both Furiosa device-plugin and DRA allocations.
 
 
 Metrics
@@ -170,7 +170,11 @@ The following table describes the common metric labels:
 
 
 The following metric labels are optional and enabled only when the corresponding command-line options (``--node-name`` and ``--kube-resources-label``) are set.
-Additionally, the *namespace*, *pod*, and *container* labels require an environment where the `Kubernetes PodResource API <https://kubernetes.io/blog/2023/08/23/kubelet-podresources-api-ga/>`_ is supported.
+Additionally, the *namespace*, *pod*, and *container* labels require an environment where the `Kubernetes PodResource API <https://kubernetes.io/blog/2023/08/23/kubelet-podresources-api-ga/>`_ is supported. The exporter uses the kubelet PodResources v1 ``List`` API for both Furiosa device-plugin resources and Furiosa DRA dynamic resources while keeping the same metric labels.
+
+For DRA-based labels, kubelet must expose dynamic resources through PodResources. This requires the kubelet ``KubeletPodResourcesDynamicResources`` feature gate, which is enabled by default in Kubernetes 1.34 and later.
+Furiosa DRA devices (driver ``npu.furiosa.ai``) are matched by their local device names, such as ``npu0``. No additional exporter flags or Kubernetes API RBAC permissions are required.
+When a device is shared, the exporter emits a metric for each distinct pod/container using it. These series report the same device or core measurement, not per-container usage; summing them will double-count shared hardware.
 
 .. list-table:: Optional NPU Metrics Label Attributes
    :align: center

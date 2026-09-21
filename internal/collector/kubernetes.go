@@ -14,12 +14,13 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 
-	podResourcesAPI "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
+	podResourcesAPI "k8s.io/kubelet/pkg/apis/podresources/v1"
 )
 
 const (
 	k8sSocket             = "/var/lib/kubelet/pod-resources/kubelet.sock"
 	furiosaResourcePrefix = "furiosa.ai"
+	furiosaDRADriverName  = "npu.furiosa.ai"
 )
 
 type podInfo struct {
@@ -30,12 +31,18 @@ type podInfo struct {
 	CoreLabel     string
 }
 
-// deviceWiseCache maps uuid to pod information for device wise metrics
+type podContainerID struct {
+	namespace string
+	pod       string
+	container string
+}
+
+// deviceWiseCache maps a device identifier to pods for device wise metrics.
 type deviceWiseCache map[string][]podInfo
 
-type coreToPodInfo map[int]podInfo
+type coreToPodInfo map[int][]podInfo
 
-// coreWiseCache maps uuid to core to pod name for core wise metrics
+// coreWiseCache maps a device identifier and core to pods for core wise metrics.
 type coreWiseCache map[string]coreToPodInfo
 
 type KubeResourcesMapper interface {
@@ -102,11 +109,10 @@ func (k *kubeResourcesMapper) TransformDeviceMetrics(metrics MetricContainer, co
 	defer k.RUnlock()
 
 	for _, metric := range metrics {
-		uuidValue, uuidFound := metric[uuid].(string)
-		if !uuidFound {
-			transformed = append(transformed, metric)
-			continue
-		}
+		deviceUUID, _ := metric[uuid].(string)
+		deviceName, _ := metric[device].(string)
+		draKey := draDeviceKey(deviceName)
+		var podInfos []podInfo
 
 		if coreWiseMetric {
 			// handle core wise metrics like utilization and performance counter
@@ -121,32 +127,37 @@ func (k *kubeResourcesMapper) TransformDeviceMetrics(metrics MetricContainer, co
 				transformed = append(transformed, metric)
 				continue
 			}
+			podInfos = append(podInfos, k.coreWiseCache[deviceUUID][coreIdx]...)
+			podInfos = append(podInfos, k.coreWiseCache[draKey][coreIdx]...)
+		} else {
+			podInfos = append(podInfos, k.deviceWiseCache[deviceUUID]...)
+			podInfos = append(podInfos, k.deviceWiseCache[draKey]...)
+		}
+		if len(podInfos) == 0 {
+			transformed = append(transformed, metric)
+			continue
+		}
 
-			podInformation, found := k.coreWiseCache[uuidValue][coreIdx]
-			if !found {
-				transformed = append(transformed, metric)
+		seenContainers := make(map[podContainerID]bool)
+		for _, podInformation := range podInfos {
+			containerID := podContainerID{
+				namespace: podInformation.Namespace,
+				pod:       podInformation.Name,
+				container: podInformation.ContainerName,
+			}
+			if seenContainers[containerID] {
 				continue
 			}
+			seenContainers[containerID] = true
 
 			copied := deepCopyMetric(metric)
 			copied[kubernetesNamespace] = podInformation.Namespace
 			copied[kubernetesPod] = podInformation.Name
 			copied[kubernetesContainer] = podInformation.ContainerName
-			transformed = append(transformed, copied)
-
-		} else {
-			// handle device wise metrics
-			podInfoSlice, podInfoSliceFound := k.deviceWiseCache[uuidValue]
-			if !podInfoSliceFound {
-				transformed = append(transformed, metric)
-				continue
+			// Device-wise metrics use a core range; core-wise metrics retain their core index.
+			if !coreWiseMetric {
+				copied[core] = podInformation.CoreLabel
 			}
-
-			copied := deepCopyMetric(metric)
-			copied[kubernetesNamespace] = podInfoSlice[0].Namespace
-			copied[kubernetesPod] = podInfoSlice[0].Name
-			copied[kubernetesContainer] = podInfoSlice[0].ContainerName
-			copied[core] = podInfoSlice[0].CoreLabel
 			transformed = append(transformed, copied)
 		}
 	}
@@ -154,66 +165,95 @@ func (k *kubeResourcesMapper) TransformDeviceMetrics(metrics MetricContainer, co
 	return transformed
 }
 
-func buildMultiWiseCache() (deviceWiseCache, coreWiseCache, error) {
-	deviceWise := make(deviceWiseCache)
-	coreWise := make(coreWiseCache)
+// draDeviceKey separates DRA's SMI device names from device-plugin UUIDs.
+func draDeviceKey(deviceName string) string {
+	return furiosaDRADriverName + "/" + deviceName
+}
 
+func buildMultiWiseCache() (deviceWiseCache, coreWiseCache, error) {
 	_, err := os.Stat(k8sSocket)
 	if os.IsNotExist(err) {
 		return nil, nil, fmt.Errorf("kubelet socket '%s' does not exist", k8sSocket)
 	}
 
 	c, cleanup, err := connectToServer()
-
 	if err != nil {
 		return nil, nil, err
 	}
 	defer cleanup()
 
 	devicePods, err := listPods(c)
-
 	if err != nil {
 		return nil, nil, err
 	}
 
+	deviceWise, coreWise := buildMultiWiseCacheFromPodResources(devicePods)
+	return deviceWise, coreWise, nil
+}
+
+func buildMultiWiseCacheFromPodResources(devicePods *podResourcesAPI.ListPodResourcesResponse) (deviceWiseCache, coreWiseCache) {
+	deviceWise := make(deviceWiseCache)
+	coreWise := make(coreWiseCache)
+
 	for _, podResource := range devicePods.GetPodResources() {
 		for _, containerResource := range podResource.GetContainers() {
+			deviceKeys := make(map[string]bool)
 			for _, containerDevice := range containerResource.GetDevices() {
-
 				resource := containerDevice.GetResourceName()
 				if !strings.HasPrefix(resource, furiosaResourcePrefix) {
 					continue
 				}
 
 				for _, deviceID := range containerDevice.GetDeviceIds() {
-					// fixme: use resource spec information from SMI or furiosaDevice
-					allocatedPE := getAllocatedPE()
-
-					podInformation := podInfo{
-						Name:          podResource.GetName(),
-						Namespace:     podResource.GetNamespace(),
-						ContainerName: containerResource.GetName(),
-						AllocatedPE:   allocatedPE,
-						CoreLabel:     "0-7",
+					if deviceID == "" {
+						continue
 					}
 
-					// build device wise cache
-					deviceWise[deviceID] = append(deviceWise[deviceID], podInformation)
+					deviceKeys[deviceID] = true
+				}
+			}
 
-					// build core wise cache
-					if _, ok := coreWise[deviceID]; !ok {
-						coreWise[deviceID] = make(coreToPodInfo)
+			for _, dynamicResource := range containerResource.GetDynamicResources() {
+				for _, claimResource := range dynamicResource.GetClaimResources() {
+					if claimResource.GetDriverName() != furiosaDRADriverName {
+						continue
 					}
 
-					for _, coreIdx := range allocatedPE {
-						coreWise[deviceID][coreIdx] = podInformation
+					deviceName := claimResource.GetDeviceName()
+					if deviceName == "" {
+						continue
 					}
+
+					deviceKeys[draDeviceKey(deviceName)] = true
+				}
+			}
+
+			for deviceKey := range deviceKeys {
+				// fixme: use resource spec information from SMI or furiosaDevice
+				allocatedPE := getAllocatedPE()
+				podInformation := podInfo{
+					Name:          podResource.GetName(),
+					Namespace:     podResource.GetNamespace(),
+					ContainerName: containerResource.GetName(),
+					AllocatedPE:   allocatedPE,
+					CoreLabel:     "0-7",
+				}
+
+				// build device wise cache
+				deviceWise[deviceKey] = append(deviceWise[deviceKey], podInformation)
+
+				// build core wise cache
+				if _, ok := coreWise[deviceKey]; !ok {
+					coreWise[deviceKey] = make(coreToPodInfo)
+				}
+				for _, coreIdx := range allocatedPE {
+					coreWise[deviceKey][coreIdx] = append(coreWise[deviceKey][coreIdx], podInformation)
 				}
 			}
 		}
 	}
 
-	return deviceWise, coreWise, nil
+	return deviceWise, coreWise
 }
 
 func connectToServer() (*grpc.ClientConn, func(), error) {
