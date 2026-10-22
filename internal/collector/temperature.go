@@ -3,12 +3,12 @@ package collector
 import (
 	"errors"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type temperatureCollector struct {
-	devices       []smi.Device
+	deviceSource  DeviceSource
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 	kubeResMapper KubeResourcesMapper
@@ -21,16 +21,16 @@ const (
 
 var _ Collector = (*temperatureCollector)(nil)
 
-func NewTemperatureCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+func NewTemperatureCollector(deviceSource DeviceSource, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &temperatureCollector{
-		devices:       devices,
+		deviceSource:  deviceSource,
 		metricFactory: metricFactory,
 		kubeResMapper: kubeResMapper,
 	}
 }
 
-func (t *temperatureCollector) GetDevices() []smi.Device {
-	return t.devices
+func (t *temperatureCollector) GetDevices() []*api.Device {
+	return t.deviceSource.Devices()
 }
 
 func (t *temperatureCollector) GetMetricFactory() MetricFactory {
@@ -52,11 +52,12 @@ func (t *temperatureCollector) Register() {
 	))
 }
 
-func (t *temperatureCollector) Collect(metrics map[smi.Device]Metric) error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+func (t *temperatureCollector) Collect(metrics map[*api.Device]Metric) error {
+	devices := t.GetDevices()
+	metricContainer := make(MetricContainer, 0, len(devices))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
+	for _, d := range devices {
 		metric, exists := metrics[d]
 		if !exists {
 			continue
@@ -69,7 +70,7 @@ func (t *temperatureCollector) Collect(metrics map[smi.Device]Metric) error {
 		}
 
 		metric[ambient] = deviceTemperature.Ambient()
-		metric[peak] = deviceTemperature.SocPeak()
+		metric[peak] = deviceTemperature.SoCPeak()
 		metricContainer = append(metricContainer, metric)
 	}
 

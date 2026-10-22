@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -13,8 +13,8 @@ const (
 )
 
 type coreUtilizationCollector struct {
-	devices       []smi.Device
-	observer      smi.Observer
+	deviceSource  DeviceSource
+	sampler       CoreUtilizationSampler
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 	kubeResMapper KubeResourcesMapper
@@ -22,17 +22,17 @@ type coreUtilizationCollector struct {
 
 var _ Collector = (*coreUtilizationCollector)(nil)
 
-func NewCoreUtilizationCollector(devices []smi.Device, observer smi.Observer, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+func NewCoreUtilizationCollector(deviceSource DeviceSource, sampler CoreUtilizationSampler, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &coreUtilizationCollector{
-		devices:       devices,
-		observer:      observer,
+		deviceSource:  deviceSource,
+		sampler:       sampler,
 		metricFactory: metricFactory,
 		kubeResMapper: kubeResMapper,
 	}
 }
 
-func (t *coreUtilizationCollector) GetDevices() []smi.Device {
-	return t.devices
+func (t *coreUtilizationCollector) GetDevices() []*api.Device {
+	return t.deviceSource.Devices()
 }
 
 func (t *coreUtilizationCollector) GetMetricFactory() MetricFactory {
@@ -54,17 +54,18 @@ func (t *coreUtilizationCollector) Register() {
 	))
 }
 
-func (t *coreUtilizationCollector) Collect(metrics map[smi.Device]Metric) error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+func (t *coreUtilizationCollector) Collect(metrics map[*api.Device]Metric) error {
+	devices := t.GetDevices()
+	metricContainer := make(MetricContainer, 0, len(devices))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
+	for _, d := range devices {
 		metric, exists := metrics[d]
 		if !exists {
 			continue
 		}
 
-		coreUtilizationSlice, err := t.observer.GetCoreUtilization(d)
+		coreUtilizationSlice, err := t.sampler.GetCoreUtilization(d)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -72,8 +73,8 @@ func (t *coreUtilizationCollector) Collect(metrics map[smi.Device]Metric) error 
 
 		for _, coreUtilization := range coreUtilizationSlice {
 			duplicated := deepCopyMetric(metric)
-			duplicated[core] = strconv.Itoa(int(coreUtilization.Core()))
-			duplicated[peUtilization] = coreUtilization.PeUsagePercentage()
+			duplicated[core] = strconv.Itoa(int(coreUtilization.Core))
+			duplicated[peUtilization] = coreUtilization.PeUsagePercentage
 			metricContainer = append(metricContainer, duplicated)
 		}
 	}

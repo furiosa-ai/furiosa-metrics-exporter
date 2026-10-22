@@ -12,7 +12,7 @@ import (
 
 func newFakeCycleCollector() Collector {
 	return &cycleCollector{
-		devices:       nil,
+		deviceSource:  StaticDeviceSource(nil),
 		metricFactory: nil,
 		kubeResMapper: NewFakeKubeResourcesMapper(),
 	}
@@ -28,7 +28,7 @@ func TestCycleCollector_PostProcessing(t *testing.T) {
 			description: "random cycle metrics",
 			source: func() MetricContainer {
 				mc := MetricContainer{}
-				for i := 0; i < 8; i++ {
+				for i := range 8 {
 					metric := newMetric()
 					metric[arch] = "rngd"
 					metric[core] = strconv.Itoa(i)

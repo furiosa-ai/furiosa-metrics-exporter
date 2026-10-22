@@ -3,7 +3,7 @@ package collector
 import (
 	"errors"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -13,7 +13,7 @@ const (
 )
 
 type memoryCollector struct {
-	devices       []smi.Device
+	deviceSource  DeviceSource
 	metricFactory MetricFactory
 	kubeResMapper KubeResourcesMapper
 
@@ -23,16 +23,16 @@ type memoryCollector struct {
 
 var _ Collector = (*memoryCollector)(nil)
 
-func NewMemoryCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+func NewMemoryCollector(deviceSource DeviceSource, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &memoryCollector{
-		devices:       devices,
+		deviceSource:  deviceSource,
 		metricFactory: metricFactory,
 		kubeResMapper: kubeResMapper,
 	}
 }
 
-func (t *memoryCollector) GetDevices() []smi.Device {
-	return t.devices
+func (t *memoryCollector) GetDevices() []*api.Device {
+	return t.deviceSource.Devices()
 }
 
 func (t *memoryCollector) GetMetricFactory() MetricFactory {
@@ -65,33 +65,28 @@ func (t *memoryCollector) Register() {
 	))
 }
 
-func (t *memoryCollector) Collect(metrics map[smi.Device]Metric) error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+func (t *memoryCollector) Collect(metrics map[*api.Device]Metric) error {
+	devices := t.GetDevices()
+	metricContainer := make(MetricContainer, 0, len(devices))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
+	for _, d := range devices {
 		metric, exists := metrics[d]
 		if !exists {
 			continue
 		}
 
-		memUtil, err := d.MemoryUtilization()
+		memoryUsage, err := d.MemoryUsage()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		dram := memUtil.Dram().Memory()
-		dramShared := memUtil.DramShared().Memory()
-
 		dramUsageBytes := uint64(0)
 		dramTotalBytes := uint64(0)
 
-		for _, mem := range dram {
-			dramUsageBytes += mem.InUseBytes()
-			dramTotalBytes += mem.TotalBytes()
-		}
-		for _, mem := range dramShared {
+		// Each entry is a disjoint PE fusion group that already includes its share of the shared DRAM.
+		for _, mem := range memoryUsage {
 			dramUsageBytes += mem.InUseBytes()
 			dramTotalBytes += mem.TotalBytes()
 		}

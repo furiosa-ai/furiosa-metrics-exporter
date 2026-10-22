@@ -13,7 +13,7 @@ import (
 
 func newFakeCoreUtilizationCollector() Collector {
 	return &coreUtilizationCollector{
-		devices:       nil,
+		deviceSource:  StaticDeviceSource(nil),
 		metricFactory: nil,
 		kubeResMapper: NewFakeKubeResourcesMapper(),
 	}
@@ -29,7 +29,7 @@ func TestCoreUtilizationCollector_PostProcessing(t *testing.T) {
 			description: "random core utilization metrics",
 			source: func() MetricContainer {
 				tc := MetricContainer{}
-				for i := 0; i < 8; i++ {
+				for i := range 8 {
 					metric := newMetric()
 					metric[arch] = "rngd"
 					metric[core] = strconv.Itoa(i)

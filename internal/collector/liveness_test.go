@@ -16,7 +16,7 @@ const head = `
 
 func newFakeLivenessCollector() Collector {
 	return &livenessCollector{
-		devices:       nil,
+		deviceSource:  StaticDeviceSource(nil),
 		metricFactory: nil,
 		kubeResMapper: NewFakeKubeResourcesMapper(),
 	}

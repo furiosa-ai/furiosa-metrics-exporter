@@ -11,7 +11,7 @@ import (
 
 func newFakePowerCollector() Collector {
 	return &powerCollector{
-		devices:       nil,
+		deviceSource:  StaticDeviceSource(nil),
 		metricFactory: nil,
 		kubeResMapper: NewFakeKubeResourcesMapper(),
 	}

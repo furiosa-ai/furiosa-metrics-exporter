@@ -11,7 +11,7 @@ import (
 
 func newFakeTempCollector() Collector {
 	return &temperatureCollector{
-		devices:       nil,
+		deviceSource:  StaticDeviceSource(nil),
 		metricFactory: nil,
 		kubeResMapper: NewFakeKubeResourcesMapper(),
 	}

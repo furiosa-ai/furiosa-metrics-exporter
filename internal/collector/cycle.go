@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -14,7 +14,7 @@ const (
 )
 
 type cycleCollector struct {
-	devices       []smi.Device
+	deviceSource  DeviceSource
 	metricFactory MetricFactory
 	kubeResMapper KubeResourcesMapper
 
@@ -24,16 +24,16 @@ type cycleCollector struct {
 
 var _ Collector = (*cycleCollector)(nil)
 
-func NewCycleCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+func NewCycleCollector(deviceSource DeviceSource, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &cycleCollector{
-		devices:       devices,
+		deviceSource:  deviceSource,
 		metricFactory: metricFactory,
 		kubeResMapper: kubeResMapper,
 	}
 }
 
-func (t *cycleCollector) GetDevices() []smi.Device {
-	return t.devices
+func (t *cycleCollector) GetDevices() []*api.Device {
+	return t.deviceSource.Devices()
 }
 
 func (t *cycleCollector) GetMetricFactory() MetricFactory {
@@ -67,25 +67,24 @@ func (t *cycleCollector) Register() {
 	))
 }
 
-func (t *cycleCollector) Collect(metrics map[smi.Device]Metric) error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+func (t *cycleCollector) Collect(metrics map[*api.Device]Metric) error {
+	devices := t.GetDevices()
+	metricContainer := make(MetricContainer, 0, len(devices))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
+	for _, d := range devices {
 		metric, exists := metrics[d]
 		if !exists {
 			continue
 		}
 
-		perfCounters, err := d.DevicePerformanceCounter()
+		counters, err := d.PerformanceCounter()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		counters := perfCounters.PerformanceCounter()
-		for _, counter := range counters {
-			coreIndex := counter.Core()
+		for coreIndex, counter := range counters {
 			duplicated := deepCopyMetric(metric)
 			duplicated[core] = strconv.Itoa(int(coreIndex))
 			duplicated[taskExecutionCycle] = float64(counter.TaskExecutionCycle())

@@ -3,7 +3,7 @@ package collector
 import (
 	"errors"
 
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -12,7 +12,7 @@ const (
 )
 
 type powerCollector struct {
-	devices       []smi.Device
+	deviceSource  DeviceSource
 	metricFactory MetricFactory
 	gaugeVec      *prometheus.GaugeVec
 	kubeResMapper KubeResourcesMapper
@@ -20,16 +20,16 @@ type powerCollector struct {
 
 var _ Collector = (*powerCollector)(nil)
 
-func NewPowerCollector(devices []smi.Device, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
+func NewPowerCollector(deviceSource DeviceSource, metricFactory MetricFactory, kubeResMapper KubeResourcesMapper) Collector {
 	return &powerCollector{
-		devices:       devices,
+		deviceSource:  deviceSource,
 		metricFactory: metricFactory,
 		kubeResMapper: kubeResMapper,
 	}
 }
 
-func (t *powerCollector) GetDevices() []smi.Device {
-	return t.devices
+func (t *powerCollector) GetDevices() []*api.Device {
+	return t.deviceSource.Devices()
 }
 
 func (t *powerCollector) GetMetricFactory() MetricFactory {
@@ -51,11 +51,12 @@ func (t *powerCollector) Register() {
 	))
 }
 
-func (t *powerCollector) Collect(metrics map[smi.Device]Metric) error {
-	metricContainer := make(MetricContainer, 0, len(t.devices))
+func (t *powerCollector) Collect(metrics map[*api.Device]Metric) error {
+	devices := t.GetDevices()
+	metricContainer := make(MetricContainer, 0, len(devices))
 
 	errs := make([]error, 0)
-	for _, d := range t.devices {
+	for _, d := range devices {
 		metric, exists := metrics[d]
 		if !exists {
 			continue

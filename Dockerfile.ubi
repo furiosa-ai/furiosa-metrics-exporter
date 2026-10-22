@@ -1,0 +1,33 @@
+FROM golang:1.27.2-bookworm AS builder
+
+WORKDIR /workspace
+COPY . .
+
+# Build metric-exporter binary
+RUN CGO_ENABLED=0 go build -o /main cmd/main.go
+
+FROM registry.access.redhat.com/ubi10/ubi:10.0
+ARG IMAGE_VERSION
+ARG IMAGE_RELEASE=1
+
+LABEL name="furiosa-metrics-exporter" \
+    vendor="FuriosaAI, Inc." \
+    version="${IMAGE_VERSION}" \
+    release="${IMAGE_RELEASE}" \
+    summary="Furiosa metric exporter for k8s deployed furiosa components" \
+    description="Furiosa metric exporter for k8s deployed furiosa components" \
+    maintainer="FuriosaAI Cloud Native Team <sw-devops@furiosa.ai>" \
+    io.openshift.tags="npu,furiosa,rngd,ai,accelerator,inference,metrics" \
+    io.k8s.display-name="furiosa-metrics-exporter" \
+    io.k8s.description="Furiosa metric exporter for k8s deployed furiosa components"
+
+RUN dnf update -y openssl openssl-libs glib2 libcap krb5-libs && dnf clean all
+
+WORKDIR /
+
+COPY --from=builder /main /main
+
+COPY LICENSE.txt /licenses/LICENSE.txt
+
+USER 1001
+CMD ["./main"]

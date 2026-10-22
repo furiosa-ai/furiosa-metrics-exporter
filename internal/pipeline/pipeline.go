@@ -4,24 +4,24 @@ import (
 	"sync"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 )
 
 type Pipeline struct {
 	collectors []collector.Collector
 }
 
-func NewRegisteredPipeline(devices []smi.Device, observer smi.Observer, metricFactory collector.MetricFactory, kubeResMapper collector.KubeResourcesMapper) *Pipeline {
+func NewRegisteredPipeline(deviceSource collector.DeviceSource, sampler collector.CoreUtilizationSampler, metricFactory collector.MetricFactory, kubeResMapper collector.KubeResourcesMapper) *Pipeline {
 	p := Pipeline{
 		collectors: []collector.Collector{
-			collector.NewTemperatureCollector(devices, metricFactory, kubeResMapper),
-			collector.NewPowerCollector(devices, metricFactory, kubeResMapper),
-			collector.NewLivenessCollector(devices, metricFactory, kubeResMapper),
-			collector.NewCoreUtilizationCollector(devices, observer, metricFactory, kubeResMapper),
-			collector.NewCoreFrequencyCollector(devices, metricFactory, kubeResMapper),
-			collector.NewCycleCollector(devices, metricFactory, kubeResMapper),
-			collector.NewThrottleReasonCollector(devices, metricFactory, kubeResMapper),
-			collector.NewMemoryCollector(devices, metricFactory, kubeResMapper),
+			collector.NewTemperatureCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewPowerCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewLivenessCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewCoreUtilizationCollector(deviceSource, sampler, metricFactory, kubeResMapper),
+			collector.NewCoreFrequencyCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewCycleCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewThrottleReasonCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewMemoryCollector(deviceSource, metricFactory, kubeResMapper),
 		},
 	}
 
@@ -37,12 +37,10 @@ func (p *Pipeline) Collect() []error {
 
 	wg := new(sync.WaitGroup)
 	for i := range p.collectors {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			c := p.collectors[i]
 
-			metrics := make(map[smi.Device]collector.Metric, 0)
+			metrics := make(map[*api.Device]collector.Metric, 0)
 
 			for _, d := range c.GetDevices() {
 				metric, err := c.GetMetricFactory().NewDeviceWiseMetric(d)
@@ -56,7 +54,7 @@ func (p *Pipeline) Collect() []error {
 			if err := c.Collect(metrics); err != nil {
 				errors[i] = err
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

@@ -1,0 +1,12 @@
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+.github/
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+**/bin/
+.sisyphus/

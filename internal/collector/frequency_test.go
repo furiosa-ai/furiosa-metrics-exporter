@@ -13,7 +13,7 @@ import (
 
 func newFakeCoreFrequencyCollector() Collector {
 	return &coreFrequencyCollector{
-		devices:       nil,
+		deviceSource:  StaticDeviceSource(nil),
 		metricFactory: nil,
 		kubeResMapper: NewFakeKubeResourcesMapper(),
 	}
@@ -29,7 +29,7 @@ func TestCoreFrequencyCollector_PostProcessing(t *testing.T) {
 			description: "random core frequency metrics",
 			source: func() MetricContainer {
 				tc := MetricContainer{}
-				for i := 0; i < 8; i++ {
+				for i := range 8 {
 					metric := newMetric()
 					metric[arch] = "rngd"
 					metric[core] = strconv.Itoa(i)

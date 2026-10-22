@@ -6,12 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/collector"
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/exporter"
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -85,43 +85,36 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		close(sigChan)
 	}()
 
-	err := smi.Init()
-	if err != nil {
-		return err
-	}
-
-	devices, err := smi.ListDevices()
-	if err != nil {
-		return err
-	}
-
 	var metricFactory collector.MetricFactory
 	var metricsExporter *exporter.Exporter
-	var observer smi.Observer
-	var driverInfo smi.VersionInfo
+	var sampler collector.CoreUtilizationSampler
 	errChan := make(chan error, 1)
 
-	if len(devices) == 0 {
-		noDeviceError := fmt.Errorf("couldn't recognize any furiosa devices")
-		logger.Err(noDeviceError).Msg("If this is not a NPU node, please deploy this plugin on NPU nodes only by tolerations or nodeSelector.")
-		return noDeviceError
-	}
-
-	observer, err = smi.CreateDefaultObserver()
+	// The registry enumerates devices now and re-enumerates them on every collection,
+	// so devices that appear later are picked up. An empty result is not an error.
+	deviceRegistry, err := collector.NewDeviceRegistry()
 	if err != nil {
 		return err
 	}
 
-	driverInfo, err = smi.DriverInfo()
-	if err != nil {
-		return err
+	enumerated := deviceRegistry.Devices()
+	if len(enumerated) == 0 {
+		logger.Warn().Msg("no devices enumerated at startup, waiting for devices to appear")
+	} else {
+		deviceNames := make([]string, 0, len(enumerated))
+		for _, d := range enumerated {
+			deviceNames = append(deviceNames, d.DeviceName())
+		}
+		logger.Info().Strs("devices", deviceNames).Msg("enumerated devices")
 	}
 
-	// Prepare Metric Factory
-	metricFactory = collector.NewMetricFactory(cfg.NodeName, driverInfo.String())
+	sampler = collector.NewCoreUtilizationSampler(ctx, deviceRegistry, 500*time.Millisecond)
+
+	// Prepare Metric Factory. The driver version is read by the exporter loop once per collect interval.
+	metricFactory = collector.NewMetricFactory(cfg.NodeName)
 
 	// Create Exporter
-	metricsExporter, err = exporter.NewGenericExporter(ctx, logger, cfg, devices, observer, metricFactory, errChan)
+	metricsExporter, err = exporter.NewGenericExporter(ctx, logger, cfg, deviceRegistry, sampler, metricFactory, errChan)
 	if err != nil {
 		logger.Err(err).Msg("couldn't create exporter")
 		return err

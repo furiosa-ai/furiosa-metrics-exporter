@@ -9,7 +9,6 @@ import (
 
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/config"
 	"github.com/furiosa-ai/furiosa-metrics-exporter/internal/pipeline"
-	"github.com/furiosa-ai/furiosa-smi-go/pkg/smi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 )
@@ -21,15 +20,17 @@ type Exporter struct {
 	errChan         chan error
 	kubeResSyncChan chan<- struct{}
 	pipeline        *pipeline.Pipeline
+	deviceRegistry  *collector.DeviceRegistry
+	metricFactory   collector.MetricFactory
 }
 
-func NewGenericExporter(ctx context.Context, logger zerolog.Logger, cfg *config.Config, devices []smi.Device, observer smi.Observer, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
+func NewGenericExporter(ctx context.Context, logger zerolog.Logger, cfg *config.Config, deviceRegistry *collector.DeviceRegistry, sampler collector.CoreUtilizationSampler, metricFactory collector.MetricFactory, errChan chan error) (*Exporter, error) {
 	kubeResMapper, kubeResSyncChan, err := collector.NewKubeResourcesMapper(ctx, cfg.KubeResourcesLabel)
 	if err != nil {
 		return nil, err
 	}
 
-	newDefaultPipeline := pipeline.NewRegisteredPipeline(devices, observer, metricFactory, kubeResMapper)
+	newDefaultPipeline := pipeline.NewRegisteredPipeline(deviceRegistry, sampler, metricFactory, kubeResMapper)
 
 	exporter := Exporter{
 		logger:          logger,
@@ -47,6 +48,8 @@ func NewGenericExporter(ctx context.Context, logger zerolog.Logger, cfg *config.
 		errChan:         errChan,
 		kubeResSyncChan: kubeResSyncChan,
 		pipeline:        newDefaultPipeline,
+		deviceRegistry:  deviceRegistry,
+		metricFactory:   metricFactory,
 	}
 
 	return &exporter, nil
@@ -68,6 +71,28 @@ func (e *Exporter) Start(ctx context.Context) {
 		for {
 			select {
 			case <-tick.C:
+				// re-enumerate devices, keeping the known set on failure
+				added, removed, err := e.deviceRegistry.Sync()
+				if err != nil {
+					e.logger.Warn().Err(err).Msg("couldn't re-enumerate devices, keeping the previous device set")
+				}
+
+				if len(added) > 0 || len(removed) > 0 {
+					e.logger.Info().Strs("added", added).Strs("removed", removed).Msg("device set changed")
+				}
+
+				// read the driver version once per tick; skipped with no device since there is nothing to read
+				if len(e.deviceRegistry.Devices()) > 0 {
+					changed, err := e.metricFactory.SyncDriverVersion()
+					if err != nil {
+						e.logger.Warn().Err(err).Msg("couldn't read driver version, keeping the previous value")
+					}
+
+					if changed {
+						e.logger.Info().Str("driverVersion", e.metricFactory.DriverVersion()).Msg("driver version changed")
+					}
+				}
+
 				// trigger kubelet pod resources api
 				e.kubeResSyncChan <- struct{}{}
 

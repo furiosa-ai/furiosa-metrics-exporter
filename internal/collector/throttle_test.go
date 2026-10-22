@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/furiosa-ai/furiosa-smi-go/pkg/api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,7 @@ import (
 
 func newFakeThrottleCollector() Collector {
 	return &throttleReasonCollector{
-		devices:        nil,
+		deviceSource:   StaticDeviceSource(nil),
 		metricFactory:  nil,
 		kubeResMapper:  NewFakeKubeResourcesMapper(),
 		interval:       1,
@@ -37,6 +38,7 @@ func TestThrottleCollector_PostProcessing(t *testing.T) {
 	metric[hwClockCapLabel] = float64(1)
 	metric[hwBusLimitLabel] = float64(1)
 	metric[hwPowerCapLabel] = float64(1)
+	metric[govClockCapLabel] = float64(1)
 	metric[otherReasonLabel] = float64(1)
 
 	tc = append(tc, metric)
@@ -49,6 +51,7 @@ func TestThrottleCollector_PostProcessing(t *testing.T) {
 furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="app_clock_cap",uuid="uuid"} 1
 furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="app_power_cap",uuid="uuid"} 1
 furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="hw_bus_limit",uuid="uuid"} 1
+furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="gov_clock_cap",uuid="uuid"} 1
 furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="hw_clock_cap",uuid="uuid"} 1
 furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="hw_power_cap",uuid="uuid"} 1
 furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="idle",uuid="uuid"} 1
@@ -61,4 +64,29 @@ furiosa_npu_throttling_events_count{arch="rngd",core="0-7",device="npu0",label="
 
 func TestThrottleCollector_Collect(t *testing.T) {
 	//TODO: add testcases with device mock
+}
+
+func TestThrottleReasonLabels_ContainsGovClockCap(t *testing.T) {
+	assert.Contains(t, throttleReasonLabels, govClockCapLabel)
+	assert.Equal(t, "gov_clock_cap", govClockCapLabel)
+}
+
+func TestAppendThrottleEvent_GovClockCap(t *testing.T) {
+	events := appendThrottleEvent(nil, api.ThrottleReasonIdle)
+	events = appendThrottleEvent(events, api.ThrottleReasonIdle|api.ThrottleReasonGovClockCap)
+
+	assert.Len(t, events, 2)
+	assert.Equal(t, []string{govClockCapLabel}, events[1].eventType)
+
+	events = appendThrottleEvent(events, api.ThrottleReasonIdle)
+
+	assert.Len(t, events, 3)
+	assert.Equal(t, []string{govClockCapLabel}, events[2].eventType)
+}
+
+func TestAppendThrottleEvent_GovClockCapDistinctFromOtherReason(t *testing.T) {
+	events := appendThrottleEvent(nil, 0)
+	events = appendThrottleEvent(events, api.ThrottleReasonOtherReason)
+
+	assert.Equal(t, []string{otherReasonLabel}, events[1].eventType)
 }
