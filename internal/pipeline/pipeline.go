@@ -21,6 +21,8 @@ func NewRegisteredPipeline(deviceSource collector.DeviceSource, sampler collecto
 			collector.NewCoreFrequencyCollector(deviceSource, metricFactory, kubeResMapper),
 			collector.NewCycleCollector(deviceSource, metricFactory, kubeResMapper),
 			collector.NewThrottleReasonCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewThrottleReasonStateCollector(deviceSource, metricFactory, kubeResMapper),
+			collector.NewGovernorCollector(deviceSource, metricFactory, kubeResMapper),
 			collector.NewMemoryCollector(deviceSource, metricFactory, kubeResMapper),
 		},
 	}
